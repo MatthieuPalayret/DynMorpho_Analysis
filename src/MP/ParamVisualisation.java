@@ -188,28 +188,29 @@ public class ParamVisualisation implements DialogListener, MouseListener {
 						if (results.cells.get(cellNumber).rejectCell == CellDataR.REJECT_WHOLE_TRAJ) {
 							IJ.log("Addition of cell #" + cellNumber + " for all frames.");
 							cell.stopWholeCellRejection(frame);
-						} else if (results.cells.get(cellNumber).rejectCell == CellDataR.NOT_REJECTED) {
+						} else if (results.cells.get(cellNumber).rejectCell == CellDataR.NOT_REJECTED
+								&& results.cells.get(cellNumber).cellFrame[frame].reject == CellDataR.NOT_REJECTED) {
 							IJ.log("Suppression of cell #" + cellNumber + " for all frames.");
 							cell.rejectFrame(frame, CellDataR.REJECT_WHOLE_TRAJ);
+						} else {
+							IJ.log("The cell #" + cellNumber + " in frame #" + (frame + 1) + " is already rejected ("
+									+ (cell.isFrameRejected(frame) ? cell.whichRejectionInFrame(frame)
+											: results.cells.get(cellNumber).rejectCell)
+									+ ").");
 						}
-						// TODO if in results.cells.get
-//						if (cell.whichCellRejection() == CellDataR.REJECT_WHOLE_TRAJ) {
-//							IJ.log("Addition of cell #" + cellNumber + " for all frames.");
-//							cell.rejectCell(CellDataR.NOT_REJECTED);
-//						} else if (!cell.isCellRejected()) {
-//							IJ.log("Suppression of cell #" + cellNumber + " for all frames.");
-//							cell.rejectCell(CellDataR.REJECT_WHOLE_TRAJ);
-//						}
 					} else if (paramTemp.postRejectCellFrame) {
 						if (cell.whichRejectionInFrame(frame) == CellDataR.REJECT_MANUAL) {
 							IJ.log("Addition of cell #" + cellNumber + " in frame #" + (frame + 1) + ".");
 							cell.rejectFrame(frame, CellDataR.NOT_REJECTED);
-						} else if (!cell.isFrameRejected(frame)) {
+						} else if (!cell.isFrameRejected(frame)
+								&& results.cells.get(cellNumber).rejectCell == CellDataR.NOT_REJECTED) {
 							IJ.log("Supression of cell #" + cellNumber + " in frame #" + (frame + 1) + ".");
 							cell.rejectFrame(frame, CellDataR.REJECT_MANUAL);
 						} else {
 							IJ.log("The cell #" + cellNumber + " in frame #" + (frame + 1) + " is already rejected ("
-									+ cell.isFrameRejected(frame) + ").");
+									+ (cell.isFrameRejected(frame) ? cell.whichRejectionInFrame(frame)
+											: results.cells.get(cellNumber).rejectCell)
+									+ ").");
 						}
 					}
 				}

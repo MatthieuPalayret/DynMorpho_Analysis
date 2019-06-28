@@ -9,12 +9,12 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.399;
+	public static final double version = 1.401;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
 	public String tagName = "";
-	public double pixelSizeNm = 222.5;
+	public double pixelSizeNm = 322.5;
 	public double frameLengthS = 20;
 	public boolean autoThreshold = false;
 	public double greyThreshold = 0.98;

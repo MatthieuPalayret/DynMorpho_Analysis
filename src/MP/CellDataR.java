@@ -15,7 +15,7 @@ public class CellDataR {
 	private int[] rejectFrame;
 	private CellData cellData;
 
-	private int stopRejectWholeCellFrame = 0;
+	private int stopRejectWholeCellFrame = -1;
 
 	public CellDataR(CellData cellData, int frameNumber) {
 		this.cellData = cellData;

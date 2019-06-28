@@ -82,23 +82,43 @@ public class Results {
 
 			if (cell.endFrame >= cell.startFrame) {
 				updateTrajLengthRejection(cell);
-				if (!cell.celldata.isCellRejected()) {
-
+				int stopWholeCellRejection = cell.celldata.getStopWholeCellRejection();
+				if (!cell.celldata.isCellRejected()
+						|| (stopWholeCellRejection >= cell.startFrame && stopWholeCellRejection <= cell.endFrame)) {
 					boolean previousWasRejected = false;
+					boolean encounteredReject_Whole_Traj = false;
 					int ij = cell.startFrame;
 					while (ij <= cell.endFrame && (!previousWasRejected
 							|| (previousWasRejected && cell.cellFrame[ij].reject != CellDataR.NOT_REJECTED))) {
 						previousWasRejected = cell.cellFrame[ij].reject != CellDataR.NOT_REJECTED;
+
+						// - If locally, one finds REJECT_WHOLE_TRAJ, continue anyway until
+						// next rejection.
+						if (cell.celldata.whichRejectionInFrame(ij) == CellDataR.REJECT_WHOLE_TRAJ) {
+							previousWasRejected = false;
+							encounteredReject_Whole_Traj = true;
+						}
+
 						ij++;
-						// TODO if(cellR.whichRejectionInFrame(ij)==CellDataR.REJECT_WHOLE_TRAJ)
-						// cells.getLast().rejectCell = CellDataR.REJECT_WHOLE_TRAJ;
-						// - Si localement, on trouve REJECT_WHOLE_TRAJ, le répercuter sur la cellule en
-						// cours de lecture, à continuer jusqu'à la prochaine rejection.
-						// - Si stopWholeCellRejection n'est pas nul, retenir de quel 'frame' il s'agit:
-						// en rencontrant REJECT_WHOLE_TRAJ, l'annuler, et remonter l'annuler dans
-						// results.cellData avant d'effacer stopWholeCellRejection lui-même.
 					}
 					previousWasRejected = false;
+
+					// - If stopWholeCellRejection != -1 and its frame is in cell,
+					// cancel REJECT_WHOLE_TRAJ in cellReject and each frame of cell,
+					// and cancel it in the corresponding cellData before erasing
+					// stopWholeCellRejection itself.
+					if (encounteredReject_Whole_Traj && stopWholeCellRejection >= cell.startFrame
+							&& stopWholeCellRejection < ij - 1) {
+						for (int k = cell.startFrame; k < ij - 1; k++) {
+							cell.celldata.rejectFrame(k, CellDataR.NOT_REJECTED);
+							cell.cellFrame[k].reject = CellDataR.NOT_REJECTED;
+						}
+						cell.rejectCell = CellDataR.NOT_REJECTED;
+
+						cell.celldata.stopWholeCellRejection(-1);
+					} else if (encounteredReject_Whole_Traj) {
+						cell.rejectCell = CellDataR.REJECT_WHOLE_TRAJ;
+					}
 
 					if (ij <= cell.endFrame) {
 						splitCells(ij, it);
@@ -109,14 +129,12 @@ public class Results {
 	}
 
 	private void updateTrajLengthRejection(Cell cell) {
-		if (cell.rejectCell != CellDataR.REJECT_WHOLE_TRAJ) { // Normally not necessary anymore: one cannot reject a
-																// whole cell if the cell was previously automatically
-																// rejected. TODO
+		if (cell.rejectCell != CellDataR.REJECT_WHOLE_TRAJ) {
 			if (cell.getLastNonRejectedFrame() - cell.getFirstNonRejectedFrame() + 1 < params.minTrajLength)
 				cell.rejectCell = CellDataR.REJECT_TRAJ_LENGTH;
 			else
 				cell.rejectCell = CellDataR.NOT_REJECTED;
-		} //
+		}
 	}
 
 	private void splitCells(int frameNewCell, ListIterator<Cell> it) {
@@ -239,22 +257,23 @@ public class Results {
 
 			Utils.saveTiff(imp, params.childDir + File.separator + "stack-ini.tif", false);
 			IJ.wait(300);
-			imp.flattenStack();
-			imp.hide();
-			Utils.saveTiff(imp, params.childDir + File.separator + "stack.tif", true);
+			ImagePlus imp2 = imp.duplicate();
+			imp2.flattenStack();
+			imp2.hide();
+			Utils.saveGif(imp2, params.childDir + File.separator + "stack.gif", true);
 
-			ij.plugin.frame.RoiManager.getRoiManager().removeAll();
-			ij.plugin.frame.RoiManager.getRoiManager().close();
+//			ij.plugin.frame.RoiManager.getRoiManager().removeAll();
+//			ij.plugin.frame.RoiManager.getRoiManager().close();
+//
+//			imp = new ImagePlus();
+//			Open_MP op = new Open_MP("" + params.childDir, imp);
+//			op.run(null);
 
-			imp = new ImagePlus();
-			Open_MP op = new Open_MP("" + params.childDir, imp);
-			op.run(null);
-
-			rt.saveAsPrecise(params.childDir + File.separator + "results.csv", 3);
+			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_contours.csv", 3);
 			reduceRt();
-			rt.saveAsPrecise(params.childDir + File.separator + "results-short.csv", 3);
-			linearity.saveAsPrecise(params.childDir + File.separator + "linearityCoeff.csv", 5);
-			linearityPrecised.saveAsPrecise(params.childDir + File.separator + "linearityCoeff-perFrame.csv", 5);
+			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_center_of_mass_positions.csv", 3);
+			linearity.saveAsPrecise(params.childDir + File.separator + "2-Results.csv", 5);
+			linearityPrecised.saveAsPrecise(params.childDir + File.separator + "2-Results_per_frame.csv", 5);
 
 			params.save();
 		}

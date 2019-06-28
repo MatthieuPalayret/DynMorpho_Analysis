@@ -80,7 +80,7 @@ public class CellFrame {
 				IJ.log("Building trinary perimeter...");
 			buildTrinary(save);
 
-			if (save && frame - cell.startFrame < 2 && cell.cellNumber < 2) {
+			if (params.test && save && frame - cell.startFrame < 2 && cell.cellNumber < 2) {
 				ByteProcessor bp = new ByteProcessor(imp.getWidth(), imp.getHeight());
 				buildContour(bp, curvature);
 				IJ.saveAs(new ImagePlus("", bp), "TIF",
@@ -250,7 +250,7 @@ public class CellFrame {
 			}
 		}
 
-		if (save && frame - cell.startFrame < 2 && cell.cellNumber < 2) {
+		if (params.test && save && frame - cell.startFrame < 2 && cell.cellNumber < 2) {
 			Plot plot = new Plot("Curvature " + frame, "pixels", "curvature");
 			if (params.method == 1 || params.method == 3 || params.method == 4)
 				plot.add("line", curvature);
@@ -280,8 +280,8 @@ public class CellFrame {
 		roi.setStrokeColor(CellDataR.COLOR[cell.rejectCell]);
 		if (reject != CellDataR.NOT_REJECTED)
 			roi.setStrokeColor(CellDataR.COLOR[reject]);
-		if (cell.rejectCell == CellDataR.REJECT_WHOLE_TRAJ)
-			roi.setStrokeColor(CellDataR.COLOR[CellDataR.REJECT_WHOLE_TRAJ]);
+		if (reject == CellDataR.REJECT_WHOLE_TRAJ)
+			roi.setStrokeColor(CellDataR.COLOR[CellDataR.REJECT_WHOLE_TRAJ].brighter());
 
 		roi.setName("c" + cell.cellNumber);
 		if (reject != CellDataR.NOT_REJECTED)
