@@ -629,6 +629,8 @@ public class CellFrame {
 		return Utils.area(Utils.buildFloatPolygon(contourX, contourY));
 	}
 
+	// This only returns a non-null value if another protrusion (than the uropod) is
+	// detected. This is to prevent false uropod detection
 	double areaOfTheUropod() {
 		return (reject == CellDataR.NOT_REJECTED && params.detectUropod && thisPolIsUropod != null
 				&& thisPolIsUropod[3] != NO_UROPOD && numberOfProtrusions() > 0)

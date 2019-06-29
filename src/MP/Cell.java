@@ -176,6 +176,8 @@ public class Cell {
 		return result / (numberOfNonRejectedFrames());
 	}
 
+	// This only returns a non-null value if another protrusion (than the uropod) is
+	// detected. This is to prevent false uropod detection
 	double avgAreaOfTheUropod() {
 		if (!params.detectUropod)
 			return 0;
@@ -190,6 +192,8 @@ public class Cell {
 				}
 			}
 		}
+		if (iteration == 0)
+			return 0;
 		return result / iteration;
 	}
 
