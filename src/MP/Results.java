@@ -1,5 +1,7 @@
 package MP;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -10,6 +12,8 @@ import Cell.CellData;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.Overlay;
+import ij.plugin.filter.Analyzer;
 import ij.process.ByteProcessor;
 
 public class Results {
@@ -258,8 +262,19 @@ public class Results {
 			Utils.saveTiff(imp, params.childDir + File.separator + "stack-ini.tif", false);
 			IJ.wait(300);
 			ImagePlus imp2 = imp.duplicate();
+			imp2.show();
+			imp2.setOverlay(new Overlay());
+			imp2.getOverlay().drawLabels(true);
+			Analyzer.drawLabels(true);
+			imp2.getOverlay().drawNames(true);
+			imp2.getOverlay().drawBackgrounds(false);
+			imp2.getOverlay().setLabelColor(Color.WHITE);
+			imp2.getOverlay().setLabelFont(new Font("SansSerif", Font.BOLD, 18), false);
+			imp2.setHideOverlay(false);
+			IJ.run("From ROI Manager");
 			imp2.flattenStack();
 			imp2.hide();
+			imp2.getCalibration().fps = 3;
 			Utils.saveGif(imp2, params.childDir + File.separator + "stack.gif", true);
 
 //			ij.plugin.frame.RoiManager.getRoiManager().removeAll();
@@ -269,6 +284,8 @@ public class Results {
 //			Open_MP op = new Open_MP("" + params.childDir, imp);
 //			op.run(null);
 
+			saveTrajectories();
+
 			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_contours.csv", 3);
 			reduceRt();
 			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_center_of_mass_positions.csv", 3);
@@ -277,6 +294,30 @@ public class Results {
 
 			params.save();
 		}
+	}
+
+	private void saveTrajectories() {
+		Iterator<Cell> it = cells.listIterator();
+		ResultsTableMt traj = new ResultsTableMt();
+		while (it.hasNext()) {
+			Cell cell = it.next();
+			if (cell.rejectCell == CellDataR.NOT_REJECTED) {
+				int firstFrame = cell.getFirstNonRejectedFrame();
+				int lastFrame = cell.getLastNonRejectedFrame();
+				for (int frame = firstFrame; frame <= lastFrame; frame++) {
+					if (cell.cellFrame[frame].reject == CellDataR.NOT_REJECTED) {
+						traj.incrementCounter();
+						traj.addValue(ResultsTableMt.FRAME, frame);
+						traj.addValue("Cell number", cell.cellNumber);
+						double[] xyCentreOfMass = cell.cellFrame[frame].getCentreOfMass();
+						traj.addValue(ResultsTableMt.X, xyCentreOfMass[0]);
+						traj.addValue(ResultsTableMt.Y, xyCentreOfMass[1]);
+					}
+				}
+			}
+		}
+
+		traj.saveAsPrecise(params.childDir + File.separator + "0-Trajectories.csv", 3);
 	}
 
 	@SuppressWarnings("deprecation")

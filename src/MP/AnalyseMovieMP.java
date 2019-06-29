@@ -124,7 +124,8 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 	private ImageProcessor[] previewImages;
 	private boolean selectiveOutput = false;
 	private Properties props;
-	private final String TRAJ_FILE_NAME = "trajectories.csv";
+	private final String TRAJ_FILE_NAME = "0-Trajectories.csv"; // TODO Modified: from "trajectories.csv" to
+																// "0-Trajectories.csv"
 
 	/**
 	 * Default constructor
@@ -413,7 +414,9 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 		}
 		if (uv.isGetMorph()) {
 			try {
-				getMorphologyData(cellData, true, -1, null, 0.0);
+				// TODO: Modified from true to false in getMorphologyData(cellData, true, -1,
+				// null, 0.0);
+				getMorphologyData(cellData, false, -1, null, 0.0);
 			} catch (IOException e) {
 				GenUtils.logError(e, "Could not save morphological data file.");
 			}

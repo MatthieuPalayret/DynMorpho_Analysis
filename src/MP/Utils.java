@@ -21,17 +21,6 @@ public class Utils {
 		return result;
 	}
 
-	static double[] getCentreOfMass(FloatPolygon polygon) {
-		double[] centreOfMass = new double[2];
-		double Cte = 0;
-		for (int i = 0; i < polygon.npoints - 1; i++) {
-			Cte = (polygon.xpoints[i] * polygon.ypoints[i + 1] - polygon.xpoints[i + 1] * polygon.ypoints[i]);
-			centreOfMass[0] += (polygon.xpoints[i] + polygon.xpoints[i + 1]) * Cte;
-			centreOfMass[1] += (polygon.ypoints[i] + polygon.ypoints[i + 1]) * Cte;
-		}
-		return divide(centreOfMass, 6.0 * signedArea(polygon));
-	}
-
 	static boolean intersect(PolygonRoi pol1, PolygonRoi pol2) {
 		return pol1.getBounds().intersects(pol2.getBounds());
 	}
@@ -247,13 +236,26 @@ public class Utils {
 		return pol;
 	}
 
-	public static double[] centerOfMass(FloatPolygon polygon) {
+	// This works for a continuous evenly distributed contour.
+	public static double[] getCenterOfMassEvenlyDistributedPolygon(FloatPolygon polygon) {
 		double[] results = new double[2];
 		for (int i = 0; i < polygon.npoints; i++) {
 			results[0] += polygon.xpoints[i];
 			results[1] += polygon.ypoints[i];
 		}
 		return divide(results, polygon.npoints);
+	}
+
+	// This work for any unevenly distributed polygon.
+	public static double[] getCentreOfMass(FloatPolygon polygon) {
+		double[] centreOfMass = new double[2];
+		double Cte = 0;
+		for (int i = 0; i < polygon.npoints - 1; i++) {
+			Cte = (polygon.xpoints[i] * polygon.ypoints[i + 1] - polygon.xpoints[i + 1] * polygon.ypoints[i]);
+			centreOfMass[0] += (polygon.xpoints[i] + polygon.xpoints[i + 1]) * Cte;
+			centreOfMass[1] += (polygon.ypoints[i] + polygon.ypoints[i + 1]) * Cte;
+		}
+		return Utils.divide(centreOfMass, 6.0 * Utils.signedArea(polygon));
 	}
 
 	public static double perimeter(FloatPolygon polygon) {
@@ -275,6 +277,13 @@ public class Utils {
 			fs.saveAsTiffStack(fullName);
 		else
 			fs.saveAsTiff(fullName);
+		if (flush)
+			imp.flush();
+	}
+
+	public static void saveGif(ImagePlus imp, String fullName, boolean flush) {
+		ij.io.FileSaver fs = new ij.io.FileSaver(imp);
+		fs.saveAsGif(fullName);
 		if (flush)
 			imp.flush();
 	}

@@ -284,7 +284,7 @@ public class CellFrame {
 			roi.setStrokeColor(CellDataR.COLOR[CellDataR.REJECT_WHOLE_TRAJ].brighter());
 
 		roi.setName("c" + cell.cellNumber);
-		if (reject != CellDataR.NOT_REJECTED)
+		if (reject != CellDataR.NOT_REJECTED || cell.rejectCell != CellDataR.NOT_REJECTED)
 			roi.setName(" ");
 		roi.setStrokeWidth(1.5);
 		roi.setPosition(frame);
@@ -408,7 +408,7 @@ public class CellFrame {
 		while (it.hasNext()) {
 			FloatPolygon polygon = it.next();
 			if (polygon.npoints > 1 && Utils.signedArea(polygon) > params.minAreaDetection) {
-				double[] poly = getCentreOfMass(polygon);
+				double[] poly = Utils.getCentreOfMass(polygon);
 				double[] speedVector2 = Utils.normalise(Utils.minus(cell1, poly));
 				double scalar = Utils.scalar(speedVector, speedVector2);
 				if (params.test)
@@ -436,14 +436,14 @@ public class CellFrame {
 			thisPolIsUropod[2] = NO_UROPOD;
 			return NO_UROPOD;
 		}
-		double[] lastUropodCenterOfMass = getCentreOfMass(cell.cellFrame[frame - 1].pols.get(lastUropod));
+		double[] lastUropodCenterOfMass = Utils.getCentreOfMass(cell.cellFrame[frame - 1].pols.get(lastUropod));
 		double minDistance = Double.MAX_VALUE;
 		int counter = 0;
 		ListIterator<FloatPolygon> it = pols.listIterator();
 		while (it.hasNext()) {
 			FloatPolygon polygon = it.next();
 			if (polygon.npoints > 1 && Utils.signedArea(polygon) > params.minAreaDetection) {
-				double[] poly = getCentreOfMass(polygon);
+				double[] poly = Utils.getCentreOfMass(polygon);
 				double distance = Utils.norm(Utils.minus(lastUropodCenterOfMass, poly));
 
 				if (distance < minDistance) {
@@ -456,26 +456,8 @@ public class CellFrame {
 		return thisPolIsUropod[2];
 	}
 
-	private double[] getCentreOfMass() {
-		double[] centreOfMass = new double[2];
-		for (int i = 0; i < contourX.length; i++) {
-			centreOfMass[0] += contourX[i];
-			centreOfMass[1] += contourY[i];
-		}
-		centreOfMass[0] /= (contourX.length);
-		centreOfMass[1] /= (contourY.length);
-		return centreOfMass;
-	}
-
-	private double[] getCentreOfMass(FloatPolygon polygon) {
-		double[] centreOfMass = new double[2];
-		double Cte = 0;
-		for (int i = 0; i < polygon.npoints - 1; i++) {
-			Cte = (polygon.xpoints[i] * polygon.ypoints[i + 1] - polygon.xpoints[i + 1] * polygon.ypoints[i]);
-			centreOfMass[0] += (polygon.xpoints[i] + polygon.xpoints[i + 1]) * Cte;
-			centreOfMass[1] += (polygon.ypoints[i] + polygon.ypoints[i + 1]) * Cte;
-		}
-		return Utils.divide(centreOfMass, 6.0 * Utils.signedArea(polygon));
+	protected double[] getCentreOfMass() {
+		return Utils.getCenterOfMassEvenlyDistributedPolygon(Utils.buildFloatPolygon(contourX, contourY));
 	}
 
 	public ImagePlus drawProtrusions(ImagePlus imp, int frame) {

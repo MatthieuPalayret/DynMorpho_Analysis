@@ -2,14 +2,13 @@ package MP;
 // Work with Adapt from CALM distribution plugins (https://github.com/djpbarry/CALM/wiki/Installation)
 
 import java.io.File;
-import java.io.IOException;
 
 import UserVariables.UserVariables;
 import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.401;
+	public static final double version = 1.403;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -100,7 +99,7 @@ public class Params implements Cloneable {
 
 	public void save() {
 		if (childDir != null) {
-			save(childDir + File.separator + "Parameters.txt");
+			save(childDir + File.separator + "Parameters.csv");
 		}
 	}
 
@@ -132,11 +131,7 @@ public class Params implements Cloneable {
 			params.addValue("Method", method);
 		}
 
-		try {
-			params.saveAs(filePath);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		params.saveAsPrecise(filePath, 3);
 	}
 
 	@Override

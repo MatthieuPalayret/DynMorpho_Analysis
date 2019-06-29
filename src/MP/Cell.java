@@ -38,7 +38,7 @@ public class Cell {
 			cellFrame[frame].buildProtrusions(imp, save);
 		}
 
-		if (save)
+		if (save && rejectCell == CellDataR.NOT_REJECTED)
 			updateLinearity();
 	}
 

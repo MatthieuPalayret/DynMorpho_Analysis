@@ -205,7 +205,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		 * regions.
 		 */
 		try {
-			getMorphologyData(cellData, true, -1, null, 0.0);
+			getMorphologyData(cellData, false, -1, null, 0.0);
 			for (int i = 0; i < cellData.size(); i++) {
 				buildOutput(i, cellData.get(i).getLength(), true);
 			}

@@ -10,7 +10,7 @@
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/ij-1.52n.jar" sourcepath="C:/Users/matth/Fiji.app"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/commons-math3-3.6.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/commons-csv-1.6.jar"/>
-	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/IA_Class_Library_v2.046.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/IA_Class_Library_v2.049.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/3D_Objects_Counter-2.0.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/bio-formats_plugins-6.1.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/Data_Analysis.jar"/>
