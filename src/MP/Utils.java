@@ -22,7 +22,17 @@ public class Utils {
 	}
 
 	static boolean intersect(PolygonRoi pol1, PolygonRoi pol2) {
-		return pol1.getBounds().intersects(pol2.getBounds());
+		// Look first at the intersection of the Rectangle in which they fit.
+		if (!pol1.getBounds().intersects(pol2.getBounds()))
+			return false;
+
+		float[] x = pol1.getContainedFloatPoints().xpoints;
+		float[] y = pol1.getContainedFloatPoints().ypoints;
+		for (int pnt = 0; pnt < pol1.getContainedFloatPoints().npoints; pnt++) {
+			if (pol2.containsPoint(x[pnt], y[pnt]))
+				return true;
+		}
+		return false;
 	}
 
 	static double distance(PolygonRoi pol1, PolygonRoi pol2) {
