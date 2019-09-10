@@ -3,6 +3,9 @@ package MP;
 import java.awt.Polygon;
 import java.io.File;
 
+import javax.swing.JFileChooser;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.PolygonRoi;
@@ -310,6 +313,32 @@ public class Utils {
 
 		String[] retour = { dialog.getDirectory(), dialog.getFileName() };
 		return retour;
+	}
+
+	public static String[][] getFiles(String title, String initialRoot, String initialFile) {
+		if (title == null || title == "")
+			title = "Choose files";
+		if (initialRoot == null || initialRoot == "")
+			initialRoot = "E:\\Data";
+
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+		FileNameExtensionFilter filter = new FileNameExtensionFilter("Tiff files", "tif", "tiff");
+		chooser.setFileFilter(filter);
+		chooser.setDialogTitle(title);
+		chooser.setCurrentDirectory(new File(initialRoot));
+		chooser.setMultiSelectionEnabled(true);
+
+		int returnVal = chooser.showOpenDialog(null);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			String[][] files = new String[chooser.getSelectedFiles().length][2];
+			for (int i = 0; i < files.length; i++) {
+				files[i][0] = chooser.getSelectedFiles()[i].getParent();
+				files[i][1] = chooser.getSelectedFiles()[i].getName();
+			}
+			return files;
+		} else
+			return null;
 	}
 
 }

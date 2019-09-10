@@ -31,11 +31,24 @@ public class ResultsTableMt extends ResultsTable {
 		super();
 	}
 
+	@SuppressWarnings("deprecation")
+	public int addNewColumn(String column) {
+		int column_ = getColumnIndex(column);
+		if (column_ == COLUMN_NOT_FOUND) {
+			setHeading(freeColumn, column);
+			freeColumn++;
+			return freeColumn - 1;
+		}
+		return column_;
+	}
+
 	/** Adds a value to the end of the given column. Counter must be >0. */
+	@Override
 	public void addValue(int column, double value) {
 		setValue(column, getCounter() - 1, value);
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
 	public void addValue(String column, double value) {
 		int column_ = getColumnIndex(column);
@@ -49,6 +62,7 @@ public class ResultsTableMt extends ResultsTable {
 		setValue(column_, getCounter() - 1, value);
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
 	public void addValue(String column, String value) {
 		int column_ = getColumnIndex(column);
@@ -62,6 +76,7 @@ public class ResultsTableMt extends ResultsTable {
 		setValue(column_, getCounter() - 1, value);
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
 	public void setValue(int column, int row, double value) {
 		if (column < defaultHeadings.length && !columnExists(column))
@@ -69,6 +84,7 @@ public class ResultsTableMt extends ResultsTable {
 		super.setValue(column, row, value);
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
 	public void setValue(String column, int row, String value) {
 		int column_ = getColumnIndex(column);
@@ -82,10 +98,12 @@ public class ResultsTableMt extends ResultsTable {
 		super.setValue(column_, row, value);
 	}
 
+	@Override
 	public void setValue(int column, int row, String value) {
 		super.setValue(column, row, value);
 	}
 
+	@Override
 	@SuppressWarnings("deprecation")
 	public void setValue(String column, int row, double value) {
 		int column_ = getColumnIndex(column);
@@ -99,6 +117,7 @@ public class ResultsTableMt extends ResultsTable {
 		setValue(column_, row, value);
 	}
 
+	@Override
 	public double getValueAsDouble(int column, int row) {
 		if (columnExists(column))
 			return super.getValueAsDouble(column, row);
@@ -106,6 +125,7 @@ public class ResultsTableMt extends ResultsTable {
 			return 0;
 	}
 
+	@Override
 	public double getValue(String column, int row) {
 		int column_ = getColumnIndex(column);
 		return getValueAsDouble(column_, row);
@@ -115,11 +135,13 @@ public class ResultsTableMt extends ResultsTable {
 	 * Returns the string value of the given column and row, where row must be
 	 * greater than or equal zero and less than the value returned by getCounter().
 	 */
+	@Override
 	public String getStringValue(String column, int row) {
 		int column_ = getColumnIndex(column);
 		return getStringValue(column_, row);
 	}
 
+	@Override
 	public String getStringValue(int column, int row) {
 		if (columnExists(column))
 			return super.getStringValue(column, row);
@@ -131,6 +153,7 @@ public class ResultsTableMt extends ResultsTable {
 	 * Returns the index of the first column with the given heading. heading. If not
 	 * found, returns COLUMN_NOT_FOUND.
 	 */
+	@Override
 	public int getColumnIndex(String column) {
 		int column_ = 0;
 		for (; column_ < defaultHeadings.length; column_++) {
@@ -266,6 +289,7 @@ public class ResultsTableMt extends ResultsTable {
 		}
 	}
 
+	@Override
 	public ResultsTableMt clone() {
 		ResultsTableMt retour = new ResultsTableMt();
 		for (int row = 0; row < getCounter(); row++)
@@ -280,5 +304,27 @@ public class ResultsTableMt extends ResultsTable {
 			if (from.columnExists(column) && from.getColumnHeading(column) != null)
 				to.addValue(from.getColumnHeading(column), from.getValueAsDouble(column, row));
 		}
+	}
+
+	public static ResultsTableMt concatenate(ResultsTableMt from, ResultsTableMt to) {
+		if (from == null) {
+			if (to == null) {
+				return null;
+			} else
+				return to.clone();
+		}
+
+		if (to == null)
+			return from.clone();
+
+		IJ.showStatus("Combining results...");
+		for (int i = 0; i < from.getCounter(); i++) {
+			if (i % 10 == 0)
+				IJ.showProgress(i, from.getCounter());
+			addRow(from, to, i);
+		}
+
+		IJ.showProgress(1);
+		return to;
 	}
 }
