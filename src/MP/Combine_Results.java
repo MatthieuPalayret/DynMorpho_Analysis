@@ -24,6 +24,11 @@ import javax.swing.event.ListSelectionListener;
 import ij.plugin.PlugIn;
 
 public class Combine_Results extends JFrame implements PlugIn, ActionListener, ListSelectionListener {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8288301039264353779L;
 	private JLabel lblFoldersToBe;
 	private JButton btnAddFolders;
 	private JButton btnDeleteFolders;
@@ -33,14 +38,14 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	private JList<String> list;
 	private DefaultListModel<String> listmodel = new DefaultListModel<String>();
 	DefaultListModel<String> resultList = new DefaultListModel<String>();
-	private static final Font font = new Font("Segoe UI", Font.PLAIN, 12);
+	private static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
 
 	public Combine_Results() {
 		super("Combine results...");
-		this.setBounds(20, 20, 600, 600);
+		this.setBounds(20, 20, 600, 300);
 		getContentPane().setFont(font);
 		GridBagLayout gridBagLayout = new GridBagLayout();
-		gridBagLayout.columnWidths = new int[] { 4, 551, 143, 2, 0 };
+		gridBagLayout.columnWidths = new int[] { 4, 551, 103, 2, 0 };
 		gridBagLayout.rowHeights = new int[] { 4, 22, 31, 31, 31, 2, 0 };
 		gridBagLayout.columnWeights = new double[] { 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
@@ -99,6 +104,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		btnCancel = new JButton("Cancel");
 		btnCancel.setFont(font);
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
+		gbc_btnCancel.ipadx = 40;
 		gbc_btnCancel.anchor = GridBagConstraints.EAST;
 		gbc_btnCancel.insets = new Insets(0, 0, 5, 5);
 		gbc_btnCancel.gridx = 1;
@@ -158,13 +164,22 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 			}
 		} else if (source == btnCancel) {
 			resultList = null;
-			this.setVisible(false);
-			this.dispose();
+			disposeThis();
 		} else if (source == btnOk) {
 			resultList = listmodel;
-			this.setVisible(false);
+			disposeThis();
 			doCombine();
 		}
+	}
+
+	private void disposeThis() {
+		this.setVisible(false);
+		btnAddFolders.removeActionListener(this);
+		btnDeleteFolders.removeActionListener(this);
+		btnOk.removeActionListener(this);
+		btnCancel.removeActionListener(this);
+		list.removeListSelectionListener(this);
+		this.dispose();
 	}
 
 	@Override
@@ -186,15 +201,33 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	void doCombine() {
 		// Use the resultList to read results one by one, combine them, and save them
 		ResultsTableMt rt = new ResultsTableMt();
-		String newColumnTitle = "Orginal File";
+		String newColumnTitle = "Original File";
 		int newColumn = rt.addNewColumn(newColumnTitle);
+
+		int avgNumberOfProtrusions = 0, avgDistOfTheProt = 0, closestProt = 0, avgSizeOfProt = 0, avgAreaOfTheUro = 0;
 
 		for (int i = 0; i < resultList.getSize(); i++) {
 			ResultsTableMt rtTemp = ResultsTableMt.open2(resultList.get(i) + File.separator + "2-Results.csv");
 			int firstRowValue = rt.getCounter();
 			ResultsTableMt.concatenate(rtTemp, rt);
+
+			if (i == 0) {
+				avgNumberOfProtrusions = rt.addNewColumn("AvgNumberOfProtrusions");
+				avgDistOfTheProt = rt.addNewColumn("AvDistOfTheProtrusionToTheLeadingEdge (%)");
+				closestProt = rt.addNewColumn("ClosestProtrusionToTheUropod (%)");
+				avgSizeOfProt = rt.addNewColumn("AvgSizeOfProtrusions (µm²)");
+				avgAreaOfTheUro = rt.addNewColumn("AvgAreaOfTheUropod (µm²)");
+			}
+
 			for (int j = firstRowValue; j < rt.getCounter(); j++) {
 				rt.setValue(newColumn, j, resultList.get(i));
+
+				if (rt.getValueAsDouble(avgNumberOfProtrusions, j) == 0) {
+					rt.setValue(avgDistOfTheProt, j, "");
+					rt.setValue(closestProt, j, "");
+					rt.setValue(avgSizeOfProt, j, "");
+					rt.setValue(avgAreaOfTheUro, j, "");
+				}
 			}
 		}
 
