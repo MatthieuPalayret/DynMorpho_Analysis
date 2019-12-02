@@ -259,9 +259,13 @@ public class Results {
 			ij.plugin.frame.RoiManager.getRoiManager().runCommand("Save",
 					params.childDir + File.separator + "stack-RoiSet.zip");
 
+			ImagePlus imp2 = imp.duplicate();
+			if (params.finalAddedSlice) {
+				imp.getImageStack().deleteLastSlice();
+			}
 			Utils.saveTiff(imp, params.childDir + File.separator + "stack-ini.tif", false);
 			IJ.wait(300);
-			ImagePlus imp2 = imp.duplicate();
+
 			imp2.show();
 			imp2.setOverlay(new Overlay());
 			imp2.getOverlay().drawLabels(true);
@@ -274,6 +278,9 @@ public class Results {
 			IJ.run("From ROI Manager");
 			imp2.flattenStack();
 			imp2.hide();
+			if (params.finalAddedSlice) {
+				imp2.getImageStack().deleteLastSlice();
+			}
 			imp2.getCalibration().fps = 3;
 			Utils.saveGif(imp2, params.childDir + File.separator + "stack.gif", true);
 

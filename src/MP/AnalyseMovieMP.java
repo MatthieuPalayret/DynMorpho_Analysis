@@ -883,9 +883,10 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 				}
 			}
 		}
-		DataWriter.saveValues(trajData,
-				new File(String.format("%s%s%s", popDir.getAbsolutePath(), File.separator, TRAJ_FILE_NAME)),
-				trajDataHeadings, null, false);
+		if (trajData.size() > 1 && trajData.get(0) != null && trajData.get(0).size() > 0)
+			DataWriter.saveValues(trajData,
+					new File(String.format("%s%s%s", popDir.getAbsolutePath(), File.separator, TRAJ_FILE_NAME)),
+					trajDataHeadings, null, false);
 		dialog.dispose();
 	}
 

@@ -23,22 +23,24 @@ import ij.process.ImageProcessor;
 public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 
 	private boolean selectiveOutput = false;
-	private Params params;
+	protected Params params;
 
 	public Analyse_Protrusion_MP() {
 		super();
 	}
 
 	@Override
-	public void run(String arg0) {
+	public void run(String subClass) {
 		IJ.log("Plugin: MP v." + Params.version);
 
 		ImagePlus impTemp = IJ.getImage();
 
+		boolean tempFinalAddedSlice = false;
 		if (!impTemp.isStack()) {
 			ImageProcessor newEmptySlice = impTemp.getProcessor().createProcessor(impTemp.getWidth(),
 					impTemp.getHeight());
 			impTemp.getStack().addSlice(newEmptySlice);
+			tempFinalAddedSlice = true;
 		}
 
 		if (impTemp.getOriginalFileInfo().directory == "") {
@@ -54,6 +56,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		IJ.run("Enhance Contrast", "saturated=0.35");
 
 		params = new Params();
+		params.finalAddedSlice = tempFinalAddedSlice;
 		uv = params.getUV();
 
 		IJ.log("Choose parameters to determine the cell contours... Legend:");
@@ -63,27 +66,30 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		params.getNewParameters(IJ.getImage());
 		uv = params.updateUV(uv);
 
-		super.run(null);
+		super.run("");
 
 		params.setChildDir(parDir);
-		IJ.log("Building protrusions...");
-		Results res = new Results(this.getCellData(), params, this.stacks[0].getSize());
-		res.buildProtrusions(false);
-		IJ.log("Protrusions built.");
 
-		IJ.log("Let's play with the parameters... Legend:");
-		IJ.log(" - Dark red: cell rejected in a single frame because of area in-/de-crease >"
-				+ IJ.d2s(params.dramaticAreaIncrease, 0) + " %.");
-		IJ.log(" - Dark blue: cell rejected in a single frame.");
-		IJ.log(" - Dark green: trajectory < " + IJ.d2s(params.minTrajLength * params.frameLengthS, 2) + "s.");
-		IJ.log(" - Dark purple: whole cell rejected.");
-		IJ.log("[- Dark yellow: cell rejected in a single frame because of 'technical' issue.]");
-		IJ.log("NB: No uropod is detected in the 1st frame of a trajectory.");
-		ParamVisualisation pm = new ParamVisualisation(params, res, stacks[0]);
-		pm.run();
+		if (subClass == null || subClass.isEmpty()) {
+			IJ.log("Building protrusions...");
+			Results res = new Results(this.getCellData(), params, this.stacks[0].getSize());
+			res.buildProtrusions(false);
+			IJ.log("Protrusions built.");
 
-		res.kill();
-		IJ.log("End of MP Protrusion analyses.");
+			IJ.log("Let's play with the parameters... Legend:");
+			IJ.log(" - Dark red: cell rejected in a single frame because of area in-/de-crease >"
+					+ IJ.d2s(params.dramaticAreaIncrease, 0) + " %.");
+			IJ.log(" - Dark blue: cell rejected in a single frame.");
+			IJ.log(" - Dark green: trajectory < " + IJ.d2s(params.minTrajLength * params.frameLengthS, 2) + "s.");
+			IJ.log(" - Dark purple: whole cell rejected.");
+			IJ.log("[- Dark yellow: cell rejected in a single frame because of 'technical' issue.]");
+			IJ.log("NB: No uropod is detected in the 1st frame of a trajectory.");
+			ParamVisualisation pm = new ParamVisualisation(params, res, stacks[0]);
+			pm.run();
+
+			res.kill();
+			IJ.log("End of MP Protrusion analyses.");
+		}
 
 	}
 
@@ -100,7 +106,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 
 	@Override
 	@SuppressWarnings("deprecation")
-	public void analyse(String arg0) {
+	public void analyse(String subClass) {
 		int cytoSize;
 		ImageStack cytoStack;
 		ImagePlus cytoImp = new ImagePlus();
@@ -220,14 +226,15 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			GenUtils.logError(e, "Could not save morphological data file.");
 		}
 		try {
-			generateCellTrajectories(cellData);
+			if (subClass == null || subClass.isEmpty() || !params.finalAddedSlice)
+				generateCellTrajectories(cellData);
 		} catch (Exception e) {
 			GenUtils.logError(e, "Error: Failed to create cell trajectories file.");
 		}
 
 	}
 
-	// TODO Use the same function as in ParamPreview
+	// Override the function in AnalyseMovieMP
 	public ArrayList<Region> generatePreview(int sliceIndex, ImageStack stack) {
 		ArrayList<CellData> cellData = new ArrayList<>();
 		ImageProcessor cytoProc = stack.getProcessor(sliceIndex).duplicate();

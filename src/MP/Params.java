@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.410;
+	public static final double version = 1.412;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -41,6 +41,9 @@ public class Params implements Cloneable {
 
 	boolean test = false;
 	File childDir;
+
+	// Internal hidden parameter
+	boolean finalAddedSlice = false;
 
 	public Params() {
 		super();
@@ -163,6 +166,8 @@ public class Params implements Cloneable {
 		output.test = this.test;
 		if (childDir != null)
 			output.childDir = new File(this.childDir.getAbsolutePath());
+
+		output.finalAddedSlice = this.finalAddedSlice;
 		return output;
 	}
 
