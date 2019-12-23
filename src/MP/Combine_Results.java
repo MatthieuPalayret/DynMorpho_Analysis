@@ -39,9 +39,21 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	private DefaultListModel<String> listmodel = new DefaultListModel<String>();
 	DefaultListModel<String> resultList = new DefaultListModel<String>();
 	private static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
+	String fileType = "folder";
+	int fileChooserType = JFileChooser.DIRECTORIES_ONLY;
 
 	public Combine_Results() {
 		super("Combine results...");
+	}
+
+	public Combine_Results(String fileType, int fileChooserType) {
+		this();
+		this.fileType = fileType;
+		this.fileChooserType = fileChooserType;
+	}
+
+	@Override
+	public void run(String arg0) {
 		this.setBounds(20, 20, 600, 300);
 		getContentPane().setFont(font);
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -51,7 +63,8 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		getContentPane().setLayout(gridBagLayout);
 
-		lblFoldersToBe = new JLabel("Folders to be combined:");
+		lblFoldersToBe = new JLabel(
+				fileType.substring(0, 1).toUpperCase() + fileType.substring(1) + "s to be combined:");
 		lblFoldersToBe.setFont(font);
 		GridBagConstraints gbc_lblFoldersToBe = new GridBagConstraints();
 		gbc_lblFoldersToBe.fill = GridBagConstraints.HORIZONTAL;
@@ -79,7 +92,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		list.addListSelectionListener(this);
 		scrollPane.setViewportView(list);
 
-		btnAddFolders = new JButton("Add folders");
+		btnAddFolders = new JButton("Add " + fileType + "s");
 		btnAddFolders.setFont(font);
 		GridBagConstraints gbc_btnAddFolders = new GridBagConstraints();
 		gbc_btnAddFolders.fill = GridBagConstraints.HORIZONTAL;
@@ -89,7 +102,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		btnAddFolders.addActionListener(this);
 		getContentPane().add(btnAddFolders, gbc_btnAddFolders);
 
-		btnDeleteFolders = new JButton("Delete folders");
+		btnDeleteFolders = new JButton("Delete " + fileType + "s");
 		btnDeleteFolders.setFont(font);
 		GridBagConstraints gbc_btnDeleteFolders = new GridBagConstraints();
 		gbc_btnDeleteFolders.anchor = GridBagConstraints.NORTH;
@@ -126,17 +139,12 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	}
 
 	@Override
-	public void run(String arg0) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
 		if (source == btnAddFolders) {
 			JFileChooser chooser = new JFileChooser();
-			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			chooser.setDialogTitle("Select folders to be combined:");
+			chooser.setFileSelectionMode(fileChooserType);
+			chooser.setDialogTitle("Select " + fileType + "s to be combined:");
 			chooser.setMultiSelectionEnabled(true);
 
 			int returnVal = chooser.showOpenDialog(null);
