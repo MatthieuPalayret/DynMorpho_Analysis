@@ -7,6 +7,10 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.util.ArrayList;
 
 import javax.swing.JButton;
@@ -30,7 +34,7 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
 
-public class ParamPreview extends JFrame implements ActionListener, ChangeListener {
+public class ParamPreview extends JFrame implements ActionListener, ChangeListener, FocusListener, KeyListener {
 
 	/**
 	 * 
@@ -86,7 +90,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		image.show();
 		image.getWindow().setLocation(21, 21);
 
-		this.setBounds(20, 20, 600, 700);
+		this.setBounds(20, 20, 600, 800);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 139, 0, 53, 0, 0 };
 		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -94,6 +98,8 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
 				0.0, 0.0, Double.MIN_VALUE };
 		getContentPane().setLayout(gridBagLayout);
+
+		addKeyListener(this);
 
 		lblGeneralParam = new JLabel("General parameters:");
 		lblGeneralParam.setFont(font);
@@ -123,6 +129,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_textField.gridy = 2;
 		getContentPane().add(fieldAdditionalTag, gbc_textField);
 		fieldAdditionalTag.addActionListener(this);
+		fieldAdditionalTag.addFocusListener(this);
 		fieldAdditionalTag.setColumns(10);
 
 		lblPixelSizenm = new JLabel("Pixel size (nm):");
@@ -144,6 +151,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_textField_1.gridy = 3;
 		getContentPane().add(fieldPixelSizenm, gbc_textField_1);
 		fieldPixelSizenm.addActionListener(this);
+		fieldPixelSizenm.addFocusListener(this);
 		fieldPixelSizenm.setColumns(10);
 
 		lblFrameLengths = new JLabel("Frame length (s):");
@@ -165,6 +173,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_textField_2.gridy = 4;
 		getContentPane().add(fieldFrameLengths, gbc_textField_2);
 		fieldFrameLengths.addActionListener(this);
+		fieldFrameLengths.addFocusListener(this);
 		fieldFrameLengths.setColumns(10);
 
 		lblParametersForAnalysis = new JLabel("Parameters for analysis:");
@@ -197,7 +206,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		chckbxAutomaticIntensityThreshold.addActionListener(this);
 		getContentPane().add(chckbxAutomaticIntensityThreshold, gbc_chckbxNewCheckBox);
 
-		lblContourIntensityThreshold = new JLabel("Contour intensity threshold ([0..1]):");
+		lblContourIntensityThreshold = new JLabel("Contour intensity threshold ([0.9 .. 1]):");
 		lblContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_lblContourIntensityThreshold = new GridBagConstraints();
 		gbc_lblContourIntensityThreshold.anchor = GridBagConstraints.EAST;
@@ -208,7 +217,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 
 		sliderContourIntensityThreshold = new JSlider();
 		sliderContourIntensityThreshold.setFont(font);
-		sliderContourIntensityThreshold.setValue((int) (paramTemp.greyThreshold * 100.0));
+		sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
 		GridBagConstraints gbc_slider = new GridBagConstraints();
 		gbc_slider.fill = GridBagConstraints.HORIZONTAL;
 		gbc_slider.insets = new Insets(0, 0, 5, 5);
@@ -217,7 +226,8 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		sliderContourIntensityThreshold.addChangeListener(this);
 		getContentPane().add(sliderContourIntensityThreshold, gbc_slider);
 
-		lblContourIntensityThreshold2 = new JTextField(IJ.d2s(sliderContourIntensityThreshold.getValue() / 100.0D, 3));
+		lblContourIntensityThreshold2 = new JTextField(
+				IJ.d2s((sliderContourIntensityThreshold.getValue()) / 1000.0D + 0.9, 3));
 		lblContourIntensityThreshold2.setFont(font);
 		GridBagConstraints gbc_label = new GridBagConstraints();
 		gbc_label.fill = GridBagConstraints.HORIZONTAL;
@@ -225,6 +235,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_label.gridx = 3;
 		gbc_label.gridy = 8;
 		lblContourIntensityThreshold2.addActionListener(this);
+		lblContourIntensityThreshold2.addFocusListener(this);
 		getContentPane().add(lblContourIntensityThreshold2, gbc_label);
 
 		lblSmoothingContourCoefficient = new JLabel("Smoothing contour coefficient:");
@@ -238,7 +249,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 
 		sliderSmoothingContourCoefficient = new JSlider();
 		sliderSmoothingContourCoefficient.setFont(font);
-		sliderSmoothingContourCoefficient.setValue((int) (paramTemp.smoothingCoeffInPixels / 5.0 * 100.0));
+		sliderSmoothingContourCoefficient.setValue((int) ((paramTemp.smoothingContour) / 5.0 * 100.0));
 		GridBagConstraints gbc_slider_1 = new GridBagConstraints();
 		gbc_slider_1.fill = GridBagConstraints.HORIZONTAL;
 		gbc_slider_1.insets = new Insets(0, 0, 5, 5);
@@ -248,7 +259,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		getContentPane().add(sliderSmoothingContourCoefficient, gbc_slider_1);
 
 		lblSmoothingContourCoefficient2 = new JTextField(
-				IJ.d2s(sliderSmoothingContourCoefficient.getValue() / 100.0D * 5.0D, 3));
+				IJ.d2s((sliderSmoothingContourCoefficient.getValue()) / 100.0D * 5.0D, 3));
 		lblSmoothingContourCoefficient2.setFont(font);
 		GridBagConstraints gbc_label_1 = new GridBagConstraints();
 		gbc_label_1.fill = GridBagConstraints.HORIZONTAL;
@@ -256,6 +267,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_label_1.gridx = 3;
 		gbc_label_1.gridy = 9;
 		lblSmoothingContourCoefficient2.addActionListener(this);
+		lblSmoothingContourCoefficient2.addFocusListener(this);
 		getContentPane().add(lblSmoothingContourCoefficient2, gbc_label_1);
 
 		lblMinimalAreaOf = new JLabel("Minimal area of a cell (\u00B5m\u00B2):");
@@ -269,8 +281,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 
 		sliderMinimalAreaOf = new JSlider();
 		sliderMinimalAreaOf.setFont(font);
-		double temp = paramTemp.minCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-		sliderMinimalAreaOf.setValue((int) (100.0 / 5.0));
+		sliderMinimalAreaOf.setValue(20);
 		GridBagConstraints gbc_slider_2 = new GridBagConstraints();
 		gbc_slider_2.fill = GridBagConstraints.HORIZONTAL;
 		gbc_slider_2.insets = new Insets(0, 0, 5, 5);
@@ -279,7 +290,8 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		sliderMinimalAreaOf.addChangeListener(this);
 		getContentPane().add(sliderMinimalAreaOf, gbc_slider_2);
 
-		lblMinimalAreaOf2 = new JTextField(IJ.d2s(sliderMinimalAreaOf.getValue() / 100.0D * 5.0D * temp, 3));
+		lblMinimalAreaOf2 = new JTextField(
+				IJ.d2s(paramTemp.minCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2), 1));
 		lblMinimalAreaOf2.setFont(font);
 		GridBagConstraints gbc_label_2 = new GridBagConstraints();
 		gbc_label_2.fill = GridBagConstraints.HORIZONTAL;
@@ -287,6 +299,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_label_2.gridx = 3;
 		gbc_label_2.gridy = 10;
 		lblMinimalAreaOf2.addActionListener(this);
+		lblMinimalAreaOf2.addFocusListener(this);
 		getContentPane().add(lblMinimalAreaOf2, gbc_label_2);
 
 		lblMaximalAreaOf = new JLabel("Maximal area of a cell (\u00B5m\u00B2):");
@@ -300,8 +313,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 
 		sliderMaximalAreaOf = new JSlider();
 		sliderMaximalAreaOf.setFont(font);
-		double temp2 = paramTemp.maxCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-		sliderMaximalAreaOf.setValue((int) (100.0 / 10.0));
+		sliderMaximalAreaOf.setValue(10);
 		GridBagConstraints gbc_slider_3 = new GridBagConstraints();
 		gbc_slider_3.fill = GridBagConstraints.HORIZONTAL;
 		gbc_slider_3.insets = new Insets(0, 0, 5, 5);
@@ -310,7 +322,8 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		sliderMaximalAreaOf.addChangeListener(this);
 		getContentPane().add(sliderMaximalAreaOf, gbc_slider_3);
 
-		labelMaximalAreaOf2 = new JTextField(IJ.d2s(sliderMaximalAreaOf.getValue() / 100.0D * 10.0D * temp2, 3));
+		labelMaximalAreaOf2 = new JTextField(
+				IJ.d2s(paramTemp.maxCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2), 0));
 		labelMaximalAreaOf2.setFont(font);
 		GridBagConstraints gbc_label_3 = new GridBagConstraints();
 		gbc_label_3.fill = GridBagConstraints.HORIZONTAL;
@@ -318,6 +331,7 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_label_3.gridx = 3;
 		gbc_label_3.gridy = 11;
 		labelMaximalAreaOf2.addActionListener(this);
+		labelMaximalAreaOf2.addFocusListener(this);
 		getContentPane().add(labelMaximalAreaOf2, gbc_label_3);
 
 		canvas_1 = image.getWindow().getCanvas();
@@ -327,11 +341,11 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		gbc_canvas_1.insets = new Insets(0, 0, 5, 5);
 		gbc_canvas_1.gridx = 1;
 		gbc_canvas_1.gridy = 12;
+		canvas_1.addKeyListener(this);
 		getContentPane().add(canvas_1, gbc_canvas_1);
 
-		sliderFrame = new JSlider();
+		sliderFrame = new JSlider(0, image.getStackSize() - 1, frame);
 		sliderFrame.setFont(font);
-		sliderFrame.setValue((int) (((double) (frame)) / ((double) image.getStackSize()) * 100.0));
 		GridBagConstraints gbc_sliderFrame = new GridBagConstraints();
 		gbc_sliderFrame.fill = GridBagConstraints.HORIZONTAL;
 		gbc_sliderFrame.gridwidth = 3;
@@ -374,6 +388,23 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
+		somethingHappened(source);
+	}
+
+	@Override
+	public void focusGained(FocusEvent e) {
+
+	}
+
+	@Override
+	public void focusLost(FocusEvent e) {
+		Object source = e.getSource();
+		somethingHappened(source);
+	}
+
+	private boolean sliderMoveAllowed = true;
+
+	private void somethingHappened(Object source) {
 		if (source == fieldAdditionalTag) {
 			paramTemp.tagName = fieldAdditionalTag.getText();
 		} else if (source == fieldPixelSizenm) {
@@ -385,22 +416,30 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 			updateImage();
 		} else if (source == lblContourIntensityThreshold2) {
 			paramTemp.greyThreshold = Double.parseDouble(lblContourIntensityThreshold2.getText());
-			sliderContourIntensityThreshold.setValue((int) (paramTemp.greyThreshold * 100.0));
+			sliderMoveAllowed = false;
+			sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
 			updateImage();
+			sliderMoveAllowed = true;
 		} else if (source == lblSmoothingContourCoefficient2) {
 			paramTemp.smoothingContour = Double.parseDouble(lblSmoothingContourCoefficient2.getText());
+			sliderMoveAllowed = false;
 			sliderSmoothingContourCoefficient.setValue((int) (paramTemp.smoothingContour * 100.0 / 5.0D));
 			updateImage();
+			sliderMoveAllowed = true;
 		} else if (source == lblMinimalAreaOf2) {
-			double temp = params.minCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-			paramTemp.minCellSurface = Double.parseDouble(lblMinimalAreaOf2.getText());
-			sliderMinimalAreaOf.setValue((int) (paramTemp.minCellSurface * 100.0 / (5.0D * temp)));
+			paramTemp.minCellSurface = Double.parseDouble(lblMinimalAreaOf2.getText())
+					/ Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
+			sliderMoveAllowed = false;
+			sliderMinimalAreaOf.setValue((int) (paramTemp.minCellSurface * 100.0 / (5.0D * params.minCellSurface)));
 			updateImage();
+			sliderMoveAllowed = true;
 		} else if (source == labelMaximalAreaOf2) {
-			double temp2 = params.maxCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-			paramTemp.maxCellSurface = Double.parseDouble(labelMaximalAreaOf2.getText());
-			sliderMaximalAreaOf.setValue((int) (paramTemp.maxCellSurface * 100.0 / (10.0D * temp2)));
+			paramTemp.maxCellSurface = Double.parseDouble(labelMaximalAreaOf2.getText())
+					/ Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
+			sliderMoveAllowed = false;
+			sliderMaximalAreaOf.setValue((int) (paramTemp.maxCellSurface * 100.0 / (10.0D * params.maxCellSurface)));
 			updateImage();
+			sliderMoveAllowed = true;
 		} else if (source == btnOk) {
 			params = paramTemp;
 			image.close();
@@ -420,44 +459,74 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 	@Override
 	public void stateChanged(ChangeEvent e) {
 		Object source = e.getSource();
-		if (source == sliderContourIntensityThreshold) {
-			paramTemp.greyThreshold = sliderContourIntensityThreshold.getValue() / 100.0D;
-			lblContourIntensityThreshold2.setText(IJ.d2s(paramTemp.greyThreshold, 3));
-			updateImage();
-		} else if (source == sliderSmoothingContourCoefficient) {
-			paramTemp.smoothingContour = sliderSmoothingContourCoefficient.getValue() / 100.0D * 5.0D;
-			lblSmoothingContourCoefficient2.setText(IJ.d2s(paramTemp.smoothingContour, 3));
-			updateImage();
-		} else if (source == sliderMinimalAreaOf) {
-			double temp = params.minCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-			paramTemp.minCellSurface = sliderMinimalAreaOf.getValue() / 100.0D * 5.0D * temp;
-			lblMinimalAreaOf2.setText(IJ.d2s(paramTemp.minCellSurface, 3));
-			updateImage();
-		} else if (source == sliderMaximalAreaOf) {
-			double temp2 = params.maxCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2);
-			paramTemp.maxCellSurface = sliderMaximalAreaOf.getValue() / 100.0D * 10.0D * temp2;
-			labelMaximalAreaOf2.setText(IJ.d2s(paramTemp.maxCellSurface, 3));
-			updateImage();
-		} else if (source == sliderFrame) {
-			frame = (int) ((sliderFrame.getValue()) / 100.0 * ((image.getStackSize())));
-			updateImage();
+		if (sliderMoveAllowed) {
+			if (source == sliderContourIntensityThreshold) {
+				paramTemp.greyThreshold = sliderContourIntensityThreshold.getValue() / 1000.0D + 0.9;
+				lblContourIntensityThreshold2.setText(IJ.d2s(paramTemp.greyThreshold, 3));
+				updateImage();
+			} else if (source == sliderSmoothingContourCoefficient) {
+				paramTemp.smoothingContour = sliderSmoothingContourCoefficient.getValue() / 100.0D * 5.0D;
+				lblSmoothingContourCoefficient2.setText(IJ.d2s(paramTemp.smoothingContour, 3));
+				updateImage();
+			} else if (source == sliderMinimalAreaOf) {
+				paramTemp.minCellSurface = sliderMinimalAreaOf.getValue() / 100.0D * 5.0D * params.minCellSurface;
+				lblMinimalAreaOf2
+						.setText(IJ.d2s(paramTemp.minCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2), 1));
+				updateImage();
+			} else if (source == sliderMaximalAreaOf) {
+				paramTemp.maxCellSurface = sliderMaximalAreaOf.getValue() / 100.0D * 10.0D * params.maxCellSurface;
+				labelMaximalAreaOf2
+						.setText(IJ.d2s(paramTemp.maxCellSurface * Math.pow(paramTemp.pixelSizeNm / 1000.0D, 2), 0));
+				updateImage();
+			} else if (source == sliderFrame) {
+				frame = sliderFrame.getValue();
+				updateImage();
+			}
 		}
+	}
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+	}
+
+	@Override
+	public void keyPressed(KeyEvent e) {
+		if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+			frame = Math.min(frame + 1, image.getStackSize() - 1);
+		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+			frame = Math.max(frame - 1, 0);
+		}
+		sliderFrame.setValue(frame);
+		updateImage();
+	}
+
+	@Override
+	public void keyReleased(KeyEvent e) {
 	}
 
 	private void disposeThis() {
 		this.setVisible(false);
+		this.removeKeyListener(this);
 		fieldAdditionalTag.removeActionListener(this);
+		fieldAdditionalTag.removeFocusListener(this);
 		fieldPixelSizenm.removeActionListener(this);
+		fieldPixelSizenm.removeFocusListener(this);
 		fieldFrameLengths.removeActionListener(this);
+		fieldFrameLengths.removeFocusListener(this);
 		chckbxAutomaticIntensityThreshold.removeActionListener(this);
+		chckbxAutomaticIntensityThreshold.removeFocusListener(this);
 		sliderContourIntensityThreshold.removeChangeListener(this);
 		lblContourIntensityThreshold2.removeActionListener(this);
+		lblContourIntensityThreshold2.removeFocusListener(this);
 		sliderSmoothingContourCoefficient.removeChangeListener(this);
 		lblSmoothingContourCoefficient2.removeActionListener(this);
+		lblSmoothingContourCoefficient2.removeFocusListener(this);
 		sliderMinimalAreaOf.removeChangeListener(this);
 		lblMinimalAreaOf2.removeActionListener(this);
+		lblMinimalAreaOf2.removeFocusListener(this);
 		sliderMaximalAreaOf.removeChangeListener(this);
 		labelMaximalAreaOf2.removeActionListener(this);
+		labelMaximalAreaOf2.removeFocusListener(this);
 		this.dispose();
 	}
 

@@ -165,7 +165,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 	public void run(String arg) {
 		LocalDateTime startTime = LocalDateTime.now();
 
-		TITLE = TITLE + "_v" + StaticVariables.VERSION + "." + numFormat.format(Revision.Revision.revisionNumber);
+		TITLE = TITLE + "_v" + Revision.Revision.VERSION + "." + numFormat.format(Revision.Revision.revisionNumber);
 		IJ.log(TITLE);
 		IJ.log(TimeAndDate.getCurrentTimeAndDate());
 		if (IJ.getInstance() != null && WindowManager.getIDList() == null) {

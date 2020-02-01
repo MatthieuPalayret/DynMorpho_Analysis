@@ -44,7 +44,7 @@ public class Combine_Imaris_Results extends Combine_Results {
 
 	@Override
 	void doCombine() {
-		IJ.log("Merry Xmas Nora!     o<|:-{)}");
+		IJ.log("Merry Xmas Nora!     o<]:-{)}");
 
 		// Go through the files thanks to resultList
 		for (int i = 0; i < resultList.getSize(); i++) {

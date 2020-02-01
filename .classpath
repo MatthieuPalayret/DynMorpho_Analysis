@@ -6,11 +6,11 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/Adapt__v2.003.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/Adapt__v2.006.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/ij-1.52n.jar" sourcepath="C:/Users/matth/Fiji.app"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/commons-math3-3.6.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/commons-csv-1.6.jar"/>
-	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/IA_Class_Library_v2.076.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/IA_Class_Library_v2.080.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/3D_Objects_Counter-2.0.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/bio-formats_plugins-6.3.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/Data_Analysis.jar"/>
