@@ -527,6 +527,10 @@ public class ParamPreview extends JFrame implements ActionListener, ChangeListen
 		sliderMaximalAreaOf.removeChangeListener(this);
 		labelMaximalAreaOf2.removeActionListener(this);
 		labelMaximalAreaOf2.removeFocusListener(this);
+		canvas_1.removeKeyListener(this);
+		sliderFrame.removeChangeListener(this);
+		btnOk.removeChangeListener(this);
+		btnCancel.removeChangeListener(this);
 		this.dispose();
 	}
 

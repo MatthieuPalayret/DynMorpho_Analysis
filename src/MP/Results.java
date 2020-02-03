@@ -48,7 +48,20 @@ public class Results {
 	}
 
 	private void detectProbableCellEncounter() {
+		// Remove all previous REJECT_DRAMATIC_CHANGE
 		ListIterator<CellDataR> it = cellData.listIterator();
+		while (it.hasNext()) {
+			CellDataR cellR = it.next();
+			CellData cell = cellR.getCellData();
+			if (cell.getEndFrame() >= cell.getStartFrame() + 1) {
+				for (int ij = 1; ij < cell.getLength(); ij++) {
+					if (cellR.whichRejectionInFrame(cell.getStartFrame() - 1 + ij) == CellDataR.REJECT_DRAMATIC_CHANGE)
+						cellR.rejectFrame(cell.getStartFrame() - 1 + ij, CellDataR.NOT_REJECTED);
+				}
+			}
+		}
+
+		it = cellData.listIterator();
 		while (it.hasNext()) {
 			CellDataR cellR = it.next();
 			CellData cell = cellR.getCellData();

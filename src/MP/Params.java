@@ -8,13 +8,13 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.429;
+	public static final double version = 1.432;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
 	public String tagName = "";
 	public double pixelSizeNm = 322.5;
-	public double frameLengthS = 20;
+	public double frameLengthS = 0.020;
 	public boolean autoThreshold = false;
 	public double greyThreshold = 0.98;
 	public double smoothingContour = 1; // Gaussian radius to smooth the image before detecting the contour
@@ -30,7 +30,7 @@ public class Params implements Cloneable {
 	public int smoothingCoeffInPixels = 6;
 	public boolean detectUropod = true;
 
-	public boolean postRejectCellFrame = true;
+	public boolean postRejectCellFrame = false;
 	public boolean postRejectWholeCell = false;
 
 	// Parameters not shown in official version
