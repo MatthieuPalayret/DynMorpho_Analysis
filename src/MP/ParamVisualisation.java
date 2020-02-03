@@ -33,6 +33,7 @@ import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Overlay;
 import ij.plugin.filter.Analyzer;
+import ij.plugin.frame.RoiManager;
 
 public class ParamVisualisation extends JFrame
 		implements ActionListener, ChangeListener, ImageListener, FocusListener, KeyListener, MouseListener {
@@ -440,6 +441,14 @@ public class ParamVisualisation extends JFrame
 		btnOk.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
 		this.dispose();
+
+		ImagePlus.removeImageListener(this);
+		ImagePlus temp = IJ.getImage();
+		if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
+			temp.close();
+		RoiManager.getInstance().setVisible(false);
+
+		finished = true;
 	}
 
 	private boolean imageLock = false;
@@ -707,21 +716,11 @@ public class ParamVisualisation extends JFrame
 		} else if (source == btnOk) {
 			updateAnalysis(paramTemp, false);
 			params = paramTemp;
-			ImagePlus.removeImageListener(this);
-			ImagePlus temp = IJ.getImage();
-			if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
-				temp.close();
 			disposeThis();
-			finished = true;
 		} else if (source == btnCancel) {
 			cancelAllRejections();
 			updateAnalysis(params, false);
-			ImagePlus.removeImageListener(this);
-			ImagePlus temp = IJ.getImage();
-			if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
-				temp.close();
 			disposeThis();
-			finished = true;
 		}
 	}
 

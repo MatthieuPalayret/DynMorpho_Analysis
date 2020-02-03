@@ -34,6 +34,7 @@ public class Open_MP implements PlugIn {
 
 		RoiManager rm = ij.plugin.frame.RoiManager.getRoiManager();
 		rm.runCommand("Open", path + File.separator + "stack-RoiSet.zip");
+		rm.setVisible(true);
 		while (!imp.isVisible())
 			IJ.wait(100);
 

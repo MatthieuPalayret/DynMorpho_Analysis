@@ -87,6 +87,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			ParamVisualisation pm = new ParamVisualisation(params, res, stacks[0]);
 			pm.run();
 
+			new Open_MP(parDir.getAbsolutePath(), new ImagePlus()).run("");
 			res.kill();
 			IJ.log("End of MP Protrusion analyses.");
 		}
