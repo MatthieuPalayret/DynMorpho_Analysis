@@ -28,14 +28,13 @@ import javax.swing.event.ChangeListener;
 import Cell.CellData;
 import UtilClasses.GenUtils;
 import ij.IJ;
-import ij.ImageListener;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.Overlay;
 import ij.plugin.filter.Analyzer;
 
-public class ParamVisualisation extends JFrame
-		implements ActionListener, ChangeListener, ImageListener, FocusListener, KeyListener, MouseListener {
+public class ParamVisualisation3 extends JFrame
+		implements ActionListener, ChangeListener, FocusListener, KeyListener, MouseListener {
 
 	/**
 	 * 
@@ -73,13 +72,14 @@ public class ParamVisualisation extends JFrame
 	private JRadioButton rdbtnRejectAWhole;
 	private final ButtonGroup buttonGroup = new ButtonGroup();
 	private ij.gui.ImageCanvas canvas_1;
+	private JSlider sliderFrame;
 	private JButton btnOk;
 	private JButton btnCancel;
 
 	private boolean finished = false;
 	private Results results;
 
-	public ParamVisualisation(Params params, Results results, ImageStack stack) {
+	public ParamVisualisation3(Params params, Results results, ImageStack stack) {
 		super("Parameter visualisation...");
 
 		this.params = params;
@@ -93,19 +93,15 @@ public class ParamVisualisation extends JFrame
 
 		image.updateAndDraw();
 		image.show();
-		image.getWindow().setLocation(505, 20);
-		canvas_1 = image.getCanvas();
-		ImagePlus.addImageListener(this);
-		canvas_1.addKeyListener(this);
-		canvas_1.addMouseListener(this);
+		image.getWindow().setLocation(21, 21);
 
-		this.setBounds(20, 20, 500, 430);
+		this.setBounds(20, 20, 600, 800);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 139, 0, 53, 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-				1.0, Double.MIN_VALUE };
+				0.0, 1.0, 0.0, 0.0, 0.0, Double.MIN_VALUE };
 		getContentPane().setLayout(gridBagLayout);
 
 		addKeyListener(this);
@@ -336,10 +332,9 @@ public class ParamVisualisation extends JFrame
 		rdbtnNoRejection = new JRadioButton("No rejection");
 		buttonGroup.add(rdbtnNoRejection);
 		GridBagConstraints gbc_rdbtnNoRejection = new GridBagConstraints();
-		gbc_rdbtnNoRejection.gridwidth = 2;
 		gbc_rdbtnNoRejection.anchor = GridBagConstraints.WEST;
 		gbc_rdbtnNoRejection.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnNoRejection.gridx = 1;
+		gbc_rdbtnNoRejection.gridx = 2;
 		gbc_rdbtnNoRejection.gridy = 11;
 		if (!paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
 			rdbtnNoRejection.setSelected(true);
@@ -349,10 +344,9 @@ public class ParamVisualisation extends JFrame
 		rdbtnRejectCellIn = new JRadioButton("Reject cell in a single frame?");
 		buttonGroup.add(rdbtnRejectCellIn);
 		GridBagConstraints gbc_rdbtnRejectCellIn = new GridBagConstraints();
-		gbc_rdbtnRejectCellIn.gridwidth = 2;
 		gbc_rdbtnRejectCellIn.anchor = GridBagConstraints.WEST;
 		gbc_rdbtnRejectCellIn.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnRejectCellIn.gridx = 1;
+		gbc_rdbtnRejectCellIn.gridx = 2;
 		gbc_rdbtnRejectCellIn.gridy = 12;
 		if (paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
 			rdbtnRejectCellIn.setSelected(true);
@@ -362,22 +356,43 @@ public class ParamVisualisation extends JFrame
 		rdbtnRejectAWhole = new JRadioButton("Reject a whole cell trajectory?");
 		buttonGroup.add(rdbtnRejectAWhole);
 		GridBagConstraints gbc_rdbtnRejectAWhole = new GridBagConstraints();
-		gbc_rdbtnRejectAWhole.gridwidth = 2;
 		gbc_rdbtnRejectAWhole.anchor = GridBagConstraints.WEST;
 		gbc_rdbtnRejectAWhole.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnRejectAWhole.gridx = 1;
+		gbc_rdbtnRejectAWhole.gridx = 2;
 		gbc_rdbtnRejectAWhole.gridy = 13;
 		if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
 			rdbtnRejectAWhole.setSelected(true);
 		rdbtnRejectAWhole.addActionListener(this);
 		getContentPane().add(rdbtnRejectAWhole, gbc_rdbtnRejectAWhole);
 
+		canvas_1 = image.getWindow().getCanvas();
+		canvas_1.setFont(font);
+		GridBagConstraints gbc_canvas_1 = new GridBagConstraints();
+		gbc_canvas_1.gridwidth = 3;
+		gbc_canvas_1.insets = new Insets(0, 0, 5, 5);
+		gbc_canvas_1.gridx = 1;
+		gbc_canvas_1.gridy = 15;
+		canvas_1.addKeyListener(this);
+		canvas_1.addMouseListener(this);
+		getContentPane().add(canvas_1, gbc_canvas_1);
+
+		sliderFrame = new JSlider(0, image.getStackSize() - 1, frame);
+		sliderFrame.setFont(font);
+		GridBagConstraints gbc_sliderFrame = new GridBagConstraints();
+		gbc_sliderFrame.fill = GridBagConstraints.HORIZONTAL;
+		gbc_sliderFrame.gridwidth = 3;
+		gbc_sliderFrame.insets = new Insets(0, 0, 5, 5);
+		gbc_sliderFrame.gridx = 1;
+		gbc_sliderFrame.gridy = 16;
+		sliderFrame.addChangeListener(this);
+		getContentPane().add(sliderFrame, gbc_sliderFrame);
+
 		btnOk = new JButton("OK");
 		btnOk.setFont(font);
 		GridBagConstraints gbc_btnOk = new GridBagConstraints();
 		gbc_btnOk.insets = new Insets(0, 0, 0, 5);
 		gbc_btnOk.gridx = 1;
-		gbc_btnOk.gridy = 14;
+		gbc_btnOk.gridy = 18;
 		btnOk.addActionListener(this);
 		getContentPane().add(btnOk, gbc_btnOk);
 
@@ -386,7 +401,7 @@ public class ParamVisualisation extends JFrame
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
 		gbc_btnCancel.insets = new Insets(0, 0, 0, 5);
 		gbc_btnCancel.gridx = 2;
-		gbc_btnCancel.gridy = 14;
+		gbc_btnCancel.gridy = 18;
 		btnCancel.addActionListener(this);
 		getContentPane().add(btnCancel, gbc_btnCancel);
 
@@ -437,6 +452,7 @@ public class ParamVisualisation extends JFrame
 		rdbtnRejectAWhole.removeChangeListener(this);
 		canvas_1.removeKeyListener(this);
 		canvas_1.removeMouseListener(this);
+		sliderFrame.removeChangeListener(this);
 		btnOk.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
 		this.dispose();
@@ -585,6 +601,9 @@ public class ParamVisualisation extends JFrame
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			frame = Math.max(frame - 1, 0);
 		}
+		sliderMoveAllowed = false;
+		sliderFrame.setValue(frame);
+		sliderMoveAllowed = true;
 		updateImage();
 	}
 
@@ -633,6 +652,10 @@ public class ParamVisualisation extends JFrame
 				double temp = sliderSmoothingWdw.getValue();
 				paramTemp.smoothingCoeffInPixels = (int) temp;
 				txtSmoothingWdw.setText(IJ.d2s(temp, 0));
+				updateImage();
+			} else if (source == sliderFrame) {
+				frame = sliderFrame.getValue();
+				image.setSlice(frame + 1);
 				updateImage();
 			}
 		}
@@ -707,7 +730,6 @@ public class ParamVisualisation extends JFrame
 		} else if (source == btnOk) {
 			updateAnalysis(paramTemp, false);
 			params = paramTemp;
-			ImagePlus.removeImageListener(this);
 			ImagePlus temp = IJ.getImage();
 			if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
 				temp.close();
@@ -716,30 +738,11 @@ public class ParamVisualisation extends JFrame
 		} else if (source == btnCancel) {
 			cancelAllRejections();
 			updateAnalysis(params, false);
-			ImagePlus.removeImageListener(this);
 			ImagePlus temp = IJ.getImage();
 			if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
 				temp.close();
 			disposeThis();
 			finished = true;
-		}
-	}
-
-	@Override
-	public void imageClosed(ImagePlus imp) {
-		if (imp == image)
-			image.show();
-	}
-
-	@Override
-	public void imageOpened(ImagePlus arg0) {
-	}
-
-	@Override
-	public void imageUpdated(ImagePlus imp) {
-		if (imp == image) {
-			frame = image.getCurrentSlice() - 1;
-			updateImage();
 		}
 	}
 

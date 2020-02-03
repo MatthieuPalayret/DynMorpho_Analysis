@@ -1,6 +1,7 @@
 package MP;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -17,6 +18,7 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
@@ -26,7 +28,6 @@ import Cell.CellData;
 import UserVariables.UserVariables;
 import UtilClasses.GenUtils;
 import ij.IJ;
-import ij.ImageListener;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.gui.ImageWindow;
@@ -35,8 +36,7 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
 
-public class ParamPreview extends JFrame
-		implements ActionListener, ImageListener, ChangeListener, FocusListener, KeyListener {
+public class ParamPreview2 extends JFrame implements ActionListener, ChangeListener, FocusListener, KeyListener {
 
 	/**
 	 * 
@@ -71,13 +71,15 @@ public class ParamPreview extends JFrame
 	private JLabel lblMaximalAreaOf;
 	private JSlider sliderMaximalAreaOf;
 	private JTextField labelMaximalAreaOf2;
+	private JPanel subPanel;
 	private ij.gui.ImageCanvas canvas_1;
+	private JSlider sliderFrame;
 	private JButton btnOk;
 	private JButton btnCancel;
 
 	private boolean finished = false;
 
-	public ParamPreview(Params params, ImagePlus img) {
+	public ParamPreview2(Params params, ImagePlus img) {
 		super("Parameter preview...");
 
 		this.params = params;
@@ -89,17 +91,15 @@ public class ParamPreview extends JFrame
 
 		image.updateAndDraw();
 		image.show();
-		image.getWindow().setLocation(505, 20);
-		canvas_1 = image.getCanvas();
-		ImagePlus.addImageListener(this);
+		image.getWindow().setLocation(21, 21);
 
-		this.setBounds(20, 20, 500, 350);
+		this.setBounds(20, 20, 600, 800);
 		GridBagLayout gridBagLayout = new GridBagLayout();
 		gridBagLayout.columnWidths = new int[] { 0, 139, 0, 53, 0, 0 };
-		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+		gridBagLayout.rowHeights = new int[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 		gridBagLayout.columnWeights = new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, Double.MIN_VALUE };
 		gridBagLayout.rowWeights = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-				Double.MIN_VALUE };
+				0.0, 0.0, Double.MIN_VALUE };
 		getContentPane().setLayout(gridBagLayout);
 
 		addKeyListener(this);
@@ -335,12 +335,44 @@ public class ParamPreview extends JFrame
 		labelMaximalAreaOf2.addFocusListener(this);
 		getContentPane().add(labelMaximalAreaOf2, gbc_label_3);
 
+		subPanel = new JPanel();
+		GridBagConstraints gbc_subPanel = new GridBagConstraints();
+		gbc_subPanel.gridwidth = 3;
+		gbc_subPanel.insets = new Insets(0, 0, 5, 5);
+		gbc_subPanel.fill = GridBagConstraints.BOTH;
+		gbc_subPanel.gridx = 1;
+		gbc_subPanel.gridy = 12;
+		getContentPane().add(subPanel, gbc_subPanel);
+
+		canvas_1 = image.getCanvas();
+		image.getWindow().setLocation(21, IJ.getScreenSize().height - image.getWindow().getHeight() - 50);
+		canvas_1.setFont(font);
+		canvas_1.setLocation(5, 5);
+		canvas_1.setMaximumSize(new Dimension(subPanel.getWidth() - 10, subPanel.getHeight() - 10));
+		canvas_1.addKeyListener(this);
+		subPanel.add(canvas_1);
+		for (int i = 0; i < 25; i++)
+			canvas_1.zoomOut(0, 0);
+		canvas_1.unzoom();
+		this.revalidate();
+
+		sliderFrame = new JSlider(0, image.getStackSize() - 1, frame);
+		sliderFrame.setFont(font);
+		GridBagConstraints gbc_sliderFrame = new GridBagConstraints();
+		gbc_sliderFrame.fill = GridBagConstraints.HORIZONTAL;
+		gbc_sliderFrame.gridwidth = 3;
+		gbc_sliderFrame.insets = new Insets(0, 0, 5, 5);
+		gbc_sliderFrame.gridx = 1;
+		gbc_sliderFrame.gridy = 13;
+		sliderFrame.addChangeListener(this);
+		getContentPane().add(sliderFrame, gbc_sliderFrame);
+
 		btnOk = new JButton("OK");
 		btnOk.setFont(font);
 		GridBagConstraints gbc_btnOk = new GridBagConstraints();
 		gbc_btnOk.insets = new Insets(0, 0, 0, 5);
 		gbc_btnOk.gridx = 1;
-		gbc_btnOk.gridy = 13;
+		gbc_btnOk.gridy = 15;
 		btnOk.addActionListener(this);
 		getContentPane().add(btnOk, gbc_btnOk);
 
@@ -349,7 +381,7 @@ public class ParamPreview extends JFrame
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
 		gbc_btnCancel.insets = new Insets(0, 0, 0, 5);
 		gbc_btnCancel.gridx = 2;
-		gbc_btnCancel.gridy = 13;
+		gbc_btnCancel.gridy = 15;
 		btnCancel.addActionListener(this);
 		getContentPane().add(btnCancel, gbc_btnCancel);
 
@@ -422,14 +454,12 @@ public class ParamPreview extends JFrame
 			sliderMoveAllowed = true;
 		} else if (source == btnOk) {
 			params = paramTemp;
-			ImagePlus.removeImageListener(this);
 			image.close();
 			image.flush();
 			imageIni.show();
 			disposeThis();
 			finished = true;
 		} else if (source == btnCancel) {
-			ImagePlus.removeImageListener(this);
 			image.close();
 			image.flush();
 			imageIni.show();
@@ -458,6 +488,9 @@ public class ParamPreview extends JFrame
 				paramTemp.maxCellSurface = sliderMaximalAreaOf.getValue() / 100.0D * 10.0D * params.maxCellSurface;
 				labelMaximalAreaOf2.setText(IJ.d2s(paramTemp.maxCellSurface * paramTemp.getPixelSizeUmSquared(), 0));
 				updateImage();
+			} else if (source == sliderFrame) {
+				frame = sliderFrame.getValue();
+				updateImage();
 			}
 		}
 	}
@@ -473,6 +506,7 @@ public class ParamPreview extends JFrame
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			frame = Math.max(frame - 1, 0);
 		}
+		sliderFrame.setValue(frame);
 		updateImage();
 	}
 
@@ -504,6 +538,7 @@ public class ParamPreview extends JFrame
 		labelMaximalAreaOf2.removeActionListener(this);
 		labelMaximalAreaOf2.removeFocusListener(this);
 		canvas_1.removeKeyListener(this);
+		sliderFrame.removeChangeListener(this);
 		btnOk.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
 		this.dispose();
@@ -576,6 +611,7 @@ public class ParamPreview extends JFrame
 			image.setOverlay(ov);
 		}
 		image.setSliceWithoutUpdate(frame + 1);
+		// canvas.repaint();
 		canvas_1.repaint();
 		image.draw();
 		image.setHideOverlay(false);
@@ -583,24 +619,6 @@ public class ParamPreview extends JFrame
 
 	public void kill() {
 		paramTemp = null;
-	}
-
-	@Override
-	public void imageClosed(ImagePlus imp) {
-		if (imp == image)
-			image.show();
-	}
-
-	@Override
-	public void imageOpened(ImagePlus arg0) {
-	}
-
-	@Override
-	public void imageUpdated(ImagePlus imp) {
-		if (imp == image) {
-			frame = imp.getCurrentSlice() - 1;
-			updateImage();
-		}
 	}
 
 }

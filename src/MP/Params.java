@@ -8,13 +8,13 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.432;
+	public static final double version = 1.441;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
 	public String tagName = "";
-	public double pixelSizeNm = 322.5;
-	public double frameLengthS = 0.020;
+	public double pixelSizeNm = 320.5;
+	public double frameLengthS = 20;
 	public boolean autoThreshold = false;
 	public double greyThreshold = 0.98;
 	public double smoothingContour = 1; // Gaussian radius to smooth the image before detecting the contour
@@ -51,6 +51,10 @@ public class Params implements Cloneable {
 
 	public void setChildDir(File childDir) {
 		this.childDir = childDir;
+	}
+
+	public double getPixelSizeUmSquared() {
+		return Math.pow(pixelSizeNm / 1000.0, 2);
 	}
 
 	public UserVariables updateUV(UserVariables uv) {
