@@ -78,7 +78,10 @@ public class ParamVisualisation extends JFrame
 	private JButton btnReset;
 	private JButton btnCancel;
 
-	private boolean finished = false;
+	final static int CANCEL = 1;
+	final static int FINISHED = 2;
+	final static int RUNNING = 0;
+	int finished = RUNNING;
 	private Results results;
 
 	public ParamVisualisation(Params params, Results results, ImageStack stack) {
@@ -407,7 +410,7 @@ public class ParamVisualisation extends JFrame
 	}
 
 	public void run() {
-		while (!finished) {
+		while (finished == RUNNING) {
 			IJ.wait(1000);
 		}
 	}
@@ -457,9 +460,6 @@ public class ParamVisualisation extends JFrame
 		ImagePlus temp = IJ.getImage();
 		if (temp != null && temp.getTitle().equalsIgnoreCase("Visualisation"))
 			temp.close();
-		RoiManager.getInstance().setVisible(false);
-
-		finished = true;
 	}
 
 	private boolean imageLock = false;
@@ -728,6 +728,8 @@ public class ParamVisualisation extends JFrame
 			updateAnalysis(paramTemp, false);
 			params = paramTemp;
 			disposeThis();
+			RoiManager.getInstance().setVisible(false);
+			finished = FINISHED;
 		} else if (source == btnReset) {
 			Params paramReset = new Params();
 			paramTemp.curvatureMinLevel = paramReset.curvatureMinLevel;
@@ -751,17 +753,21 @@ public class ParamVisualisation extends JFrame
 			txtSmoothingWdw.setText(IJ.d2s(paramTemp.smoothingCoeffInPixels, 0));
 			paramTemp.detectUropod = paramReset.detectUropod;
 			chckbxDetectUropods.setSelected(paramTemp.detectUropod);
+			paramTemp.postRejectCellFrame = paramReset.postRejectCellFrame;
+			paramTemp.postRejectWholeCell = paramReset.postRejectWholeCell;
 			if (!paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
 				rdbtnNoRejection.setSelected(true);
 			else if (paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
 				rdbtnRejectCellIn.setSelected(true);
 			else if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
 				rdbtnRejectAWhole.setSelected(true);
-			updateAnalysis(paramTemp, false);
+			cancelAllRejections();
+			updateImage();
 		} else if (source == btnCancel) {
 			cancelAllRejections();
-			updateAnalysis(params, false);
 			disposeThis();
+			finished = CANCEL;
+			image.close();
 		}
 	}
 

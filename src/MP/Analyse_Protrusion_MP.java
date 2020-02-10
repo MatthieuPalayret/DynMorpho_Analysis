@@ -24,40 +24,39 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 
 	private boolean selectiveOutput = false;
 	protected Params params;
+	protected ImagePlus imp;
 
 	public Analyse_Protrusion_MP() {
 		super();
-	}
-
-	@Override
-	public void run(String subClass) {
 		IJ.log("Plugin: MP v." + Params.version);
-
-		ImagePlus impTemp = IJ.getImage();
+		imp = IJ.getImage();
 
 		boolean tempFinalAddedSlice = false;
-		if (!impTemp.isStack()) {
-			ImageProcessor newEmptySlice = impTemp.getProcessor().createProcessor(impTemp.getWidth(),
-					impTemp.getHeight());
-			impTemp.getStack().addSlice(newEmptySlice);
+		if (!imp.isStack()) {
+			ImageProcessor newEmptySlice = imp.getProcessor().createProcessor(imp.getWidth(), imp.getHeight());
+			imp.getStack().addSlice(newEmptySlice);
 			tempFinalAddedSlice = true;
 		}
 
-		if (impTemp.getOriginalFileInfo().directory == "") {
-			Utils.saveTiff(impTemp, IJ.getFilePath("Choose a place to save this image:"), false);
+		if (imp.getOriginalFileInfo().directory == "") {
+			Utils.saveTiff(imp, IJ.getFilePath("Choose a place to save this image:"), false);
 		} else {
-			String initPath = impTemp.getOriginalFileInfo().directory + File.separator
-					+ impTemp.getOriginalFileInfo().fileName;
-			if (impTemp.getStack().isVirtual()) {
+			String initPath = imp.getOriginalFileInfo().directory + File.separator + imp.getOriginalFileInfo().fileName;
+			if (imp.getStack().isVirtual()) {
 				new Opener().open(initPath);
-				impTemp.close();
+				imp.close();
+				imp = IJ.getImage();
 			}
 		}
-		IJ.run("Enhance Contrast", "saturated=0.35");
 
 		params = new Params();
 		params.finalAddedSlice = tempFinalAddedSlice;
 		uv = params.getUV();
+	}
+
+	@Override
+	public void run(String subClass) {
+		IJ.run("Enhance Contrast", "saturated=0.35");
 
 		IJ.log("Choose parameters to determine the cell contours... Legend:");
 		IJ.log("- Blue: selected cell contours.");
@@ -90,6 +89,14 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			IJ.log("NB: No uropod is detected in the 1st frame of a trajectory.");
 			ParamVisualisation pm = new ParamVisualisation(params, res, stacks[0]);
 			pm.run();
+			if (pm.finished == ParamVisualisation.CANCEL) {
+				imp.show();
+				IJ.log("Back to step 1...");
+				super.batchMode = true;
+				super.directory = parDir;
+				this.run(subClass);
+				return;
+			}
 
 			new Open_MP(parDir.getAbsolutePath(), new ImagePlus()).run("");
 			res.kill();
