@@ -63,7 +63,11 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		IJ.log("- Blue: selected cell contours.");
 		IJ.log("- Dark blue: cell which area is > "
 				+ IJ.d2s(params.maxCellSurface * Math.pow(params.pixelSizeNm / 1000.0, 2)) + " µm².");
-		params.getNewParameters(IJ.getImage());
+		int finished = params.getNewParameters(IJ.getImage());
+		if (finished == ParamPreview.CANCEL) {
+			IJ.log("Plugin cancelled!");
+			return;
+		}
 		uv = params.updateUV(uv);
 
 		super.run("");

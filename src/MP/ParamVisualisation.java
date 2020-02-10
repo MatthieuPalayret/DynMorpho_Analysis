@@ -75,6 +75,7 @@ public class ParamVisualisation extends JFrame
 	private final ButtonGroup buttonGroup = new ButtonGroup();
 	private ij.gui.ImageCanvas canvas_1;
 	private JButton btnOk;
+	private JButton btnReset;
 	private JButton btnCancel;
 
 	private boolean finished = false;
@@ -382,11 +383,20 @@ public class ParamVisualisation extends JFrame
 		btnOk.addActionListener(this);
 		getContentPane().add(btnOk, gbc_btnOk);
 
+		btnReset = new JButton("Reset");
+		btnReset.setFont(font);
+		GridBagConstraints gbc_btnReset = new GridBagConstraints();
+		gbc_btnReset.insets = new Insets(0, 0, 0, 5);
+		gbc_btnReset.gridx = 2;
+		gbc_btnReset.gridy = 14;
+		btnReset.addActionListener(this);
+		getContentPane().add(btnReset, gbc_btnReset);
+
 		btnCancel = new JButton("Cancel");
 		btnCancel.setFont(font);
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
 		gbc_btnCancel.insets = new Insets(0, 0, 0, 5);
-		gbc_btnCancel.gridx = 2;
+		gbc_btnCancel.gridx = 3;
 		gbc_btnCancel.gridy = 14;
 		btnCancel.addActionListener(this);
 		getContentPane().add(btnCancel, gbc_btnCancel);
@@ -439,6 +449,7 @@ public class ParamVisualisation extends JFrame
 		canvas_1.removeKeyListener(this);
 		canvas_1.removeMouseListener(this);
 		btnOk.removeChangeListener(this);
+		btnReset.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
 		this.dispose();
 
@@ -717,6 +728,36 @@ public class ParamVisualisation extends JFrame
 			updateAnalysis(paramTemp, false);
 			params = paramTemp;
 			disposeThis();
+		} else if (source == btnReset) {
+			Params paramReset = new Params();
+			paramTemp.curvatureMinLevel = paramReset.curvatureMinLevel;
+			sliderMinCurvProtrusions.setValue((int) (-paramTemp.curvatureMinLevel));
+			txtMinCurvProtrusions.setText(IJ.d2s(-paramTemp.curvatureMinLevel, 0));
+			paramTemp.minTrajLength = paramReset.minTrajLength;
+			sliderMinLengthTraj.setValue(paramTemp.minTrajLength);
+			txtMinLengthTraj.setText(IJ.d2s(paramTemp.minTrajLength * paramTemp.frameLengthS, 3));
+			paramTemp.dramaticAreaIncrease = paramReset.dramaticAreaIncrease;
+			sliderDramaticIncrease.setValue((int) paramTemp.dramaticAreaIncrease);
+			txtDramaticIncrease.setText(IJ.d2s(paramTemp.dramaticAreaIncrease, 0));
+			paramTemp.minAreaDetection = paramReset.minAreaDetection;
+			sliderMinAreaProtrusion
+					.setValue((int) (paramTemp.minAreaDetection * paramTemp.getPixelSizeUmSquared() * 10.0));
+			txtMinAreaProtrusion.setText(IJ.d2s(paramTemp.minAreaDetection * paramTemp.getPixelSizeUmSquared(), 1));
+			paramTemp.maxProtrusionToCellAreaRatio = paramReset.maxProtrusionToCellAreaRatio;
+			sliderMaxProtrusionToCellSurfaceRatio.setValue((int) (paramTemp.maxProtrusionToCellAreaRatio * 100.0));
+			txtMaxProtrusionToCellSurfaceRatio.setText(IJ.d2s(paramTemp.maxProtrusionToCellAreaRatio * 100.0, 0));
+			paramTemp.smoothingCoeffInPixels = paramReset.smoothingCoeffInPixels;
+			sliderSmoothingWdw.setValue(paramTemp.smoothingCoeffInPixels);
+			txtSmoothingWdw.setText(IJ.d2s(paramTemp.smoothingCoeffInPixels, 0));
+			paramTemp.detectUropod = paramReset.detectUropod;
+			chckbxDetectUropods.setSelected(paramTemp.detectUropod);
+			if (!paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
+				rdbtnNoRejection.setSelected(true);
+			else if (paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
+				rdbtnRejectCellIn.setSelected(true);
+			else if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
+				rdbtnRejectAWhole.setSelected(true);
+			updateAnalysis(paramTemp, false);
 		} else if (source == btnCancel) {
 			cancelAllRejections();
 			updateAnalysis(params, false);

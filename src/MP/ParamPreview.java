@@ -73,9 +73,13 @@ public class ParamPreview extends JFrame
 	private JTextField labelMaximalAreaOf2;
 	private ij.gui.ImageCanvas canvas_1;
 	private JButton btnOk;
+	private JButton btnReset;
 	private JButton btnCancel;
 
-	private boolean finished = false;
+	final static int CANCEL = 1;
+	final static int FINISHED = 2;
+	final static int RUNNING = 0;
+	int finished = RUNNING;
 
 	public ParamPreview(Params params, ImagePlus img) {
 		super("Parameter preview...");
@@ -344,11 +348,20 @@ public class ParamPreview extends JFrame
 		btnOk.addActionListener(this);
 		getContentPane().add(btnOk, gbc_btnOk);
 
+		btnReset = new JButton("Reset");
+		btnReset.setFont(font);
+		GridBagConstraints gbc_btnReset = new GridBagConstraints();
+		gbc_btnReset.insets = new Insets(0, 0, 0, 5);
+		gbc_btnReset.gridx = 2;
+		gbc_btnReset.gridy = 13;
+		btnReset.addActionListener(this);
+		getContentPane().add(btnReset, gbc_btnReset);
+
 		btnCancel = new JButton("Cancel");
 		btnCancel.setFont(font);
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
 		gbc_btnCancel.insets = new Insets(0, 0, 0, 5);
-		gbc_btnCancel.gridx = 2;
+		gbc_btnCancel.gridx = 3;
 		gbc_btnCancel.gridy = 13;
 		btnCancel.addActionListener(this);
 		getContentPane().add(btnCancel, gbc_btnCancel);
@@ -360,7 +373,7 @@ public class ParamPreview extends JFrame
 	}
 
 	public void run() {
-		while (!finished) {
+		while (finished == RUNNING) {
 			IJ.wait(1000);
 		}
 	}
@@ -424,17 +437,31 @@ public class ParamPreview extends JFrame
 			params = paramTemp;
 			ImagePlus.removeImageListener(this);
 			image.close();
-			image.flush();
 			imageIni.show();
 			disposeThis();
-			finished = true;
+			finished = FINISHED;
+		} else if (source == btnReset) {
+			paramTemp = new Params();
+			fieldPixelSizenm.setText(IJ.d2s(paramTemp.pixelSizeNm, 1));
+			fieldFrameLengths.setText(IJ.d2s(paramTemp.frameLengthS, 2));
+			chckbxAutomaticIntensityThreshold.setSelected(paramTemp.autoThreshold);
+			sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
+			lblContourIntensityThreshold2
+					.setText(IJ.d2s((sliderContourIntensityThreshold.getValue()) / 1000.0D + 0.9, 3));
+			sliderSmoothingContourCoefficient.setValue((int) ((paramTemp.smoothingContour) / 5.0 * 100.0));
+			lblSmoothingContourCoefficient2
+					.setText(IJ.d2s((sliderSmoothingContourCoefficient.getValue()) / 100.0D * 5.0D, 3));
+			sliderMinimalAreaOf.setValue(20);
+			lblMinimalAreaOf2.setText(IJ.d2s(paramTemp.minCellSurface * paramTemp.getPixelSizeUmSquared(), 1));
+			sliderMaximalAreaOf.setValue(10);
+			labelMaximalAreaOf2.setText(IJ.d2s(paramTemp.maxCellSurface * paramTemp.getPixelSizeUmSquared(), 0));
+			updateImage();
 		} else if (source == btnCancel) {
 			ImagePlus.removeImageListener(this);
 			image.close();
-			image.flush();
 			imageIni.show();
 			disposeThis();
-			finished = true;
+			finished = CANCEL;
 		}
 	}
 
@@ -505,6 +532,7 @@ public class ParamPreview extends JFrame
 		labelMaximalAreaOf2.removeFocusListener(this);
 		canvas_1.removeKeyListener(this);
 		btnOk.removeChangeListener(this);
+		btnReset.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
 		this.dispose();
 	}
@@ -529,13 +557,15 @@ public class ParamPreview extends JFrame
 						while (parametersChanged) {
 							// Store the parameters to be processed
 							Params paramtemp = paramTemp.clone();
+							int frameTemp = frame;
 							// Do something with parameters
 							updateAnalysis(paramtemp, frame);
 							// Check if the parameters have changed again
-							parametersChanged = !paramtemp.compare(paramTemp);
+							parametersChanged = !paramtemp.compare(paramTemp) || !(frameTemp == frame);
 						}
 					} finally {
 						// Ensure the running flag is reset
+						updateView(frame);
 						imageLock = false;
 					}
 				}
@@ -575,6 +605,9 @@ public class ParamPreview extends JFrame
 			ov.add(roi);
 			image.setOverlay(ov);
 		}
+	}
+
+	private void updateView(int frame) {
 		image.setSliceWithoutUpdate(frame + 1);
 		canvas_1.repaint();
 		image.draw();
@@ -597,7 +630,7 @@ public class ParamPreview extends JFrame
 
 	@Override
 	public void imageUpdated(ImagePlus imp) {
-		if (imp == image) {
+		if (imp == image && imp.getCurrentSlice() - 1 != frame) {
 			frame = imp.getCurrentSlice() - 1;
 			updateImage();
 		}

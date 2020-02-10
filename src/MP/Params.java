@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.442;
+	public static final double version = 1.443;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -91,7 +91,7 @@ public class Params implements Cloneable {
 		minTrajLength = uv.getMinLength();
 	}
 
-	public void getNewParameters(ImagePlus img) {
+	public int getNewParameters(ImagePlus img) {
 		ParamPreview pp = new ParamPreview(this, img);
 		pp.run();
 		tagName = pp.params.tagName;
@@ -102,6 +102,7 @@ public class Params implements Cloneable {
 		smoothingContour = pp.params.smoothingContour;
 		minCellSurface = pp.params.minCellSurface;
 		maxCellSurface = pp.params.maxCellSurface;
+		return pp.finished;
 	}
 
 	public void save() {
