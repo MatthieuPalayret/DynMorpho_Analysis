@@ -240,5 +240,6 @@ public class Cell {
 		linearity.addValue("AvgSizeOfProtrusions (µm²)", avgSizeOfProtrusions() * pixelSizeUm2);
 		linearity.addValue("AvgAreaOfTheUropod (µm²)", avgAreaOfTheUropod() * pixelSizeUm2);
 		linearity.addValue("AvgAreaOfTheCell (µm²)", avgAreaOfTheCell() * pixelSizeUm2);
+		linearity.addValue("LengthOfTrajectory (s)", (endFrame - startFrame + 1) * params.frameLengthS);
 	}
 }

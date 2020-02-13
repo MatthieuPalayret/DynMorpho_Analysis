@@ -71,7 +71,7 @@ public class ParamPreview extends JFrame
 	private JLabel lblMaximalAreaOf;
 	private JSlider sliderMaximalAreaOf;
 	private JTextField labelMaximalAreaOf2;
-	private ij.gui.ImageCanvas canvas_1;
+	private ij.gui.ImageCanvas canvas;
 	private JButton btnOk;
 	private JButton btnReset;
 	private JButton btnCancel;
@@ -94,7 +94,7 @@ public class ParamPreview extends JFrame
 		image.updateAndDraw();
 		image.show();
 		image.getWindow().setLocation(505, 20);
-		canvas_1 = image.getCanvas();
+		canvas = image.getCanvas();
 		ImagePlus.addImageListener(this);
 
 		this.setBounds(20, 20, 500, 350);
@@ -499,6 +499,10 @@ public class ParamPreview extends JFrame
 			frame = Math.min(frame + 1, image.getStackSize() - 1);
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			frame = Math.max(frame - 1, 0);
+		} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			btnOk.setSelected(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			btnCancel.setSelected(true);
 		}
 		updateImage();
 	}
@@ -530,7 +534,7 @@ public class ParamPreview extends JFrame
 		sliderMaximalAreaOf.removeChangeListener(this);
 		labelMaximalAreaOf2.removeActionListener(this);
 		labelMaximalAreaOf2.removeFocusListener(this);
-		canvas_1.removeKeyListener(this);
+		canvas.removeKeyListener(this);
 		btnOk.removeChangeListener(this);
 		btnReset.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
@@ -609,7 +613,7 @@ public class ParamPreview extends JFrame
 
 	private void updateView(int frame) {
 		image.setSliceWithoutUpdate(frame + 1);
-		canvas_1.repaint();
+		canvas.repaint();
 		image.draw();
 		image.setHideOverlay(false);
 	}

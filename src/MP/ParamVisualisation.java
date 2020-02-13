@@ -73,7 +73,7 @@ public class ParamVisualisation extends JFrame
 	private JRadioButton rdbtnRejectCellIn;
 	private JRadioButton rdbtnRejectAWhole;
 	private final ButtonGroup buttonGroup = new ButtonGroup();
-	private ij.gui.ImageCanvas canvas_1;
+	private ij.gui.ImageCanvas canvas;
 	private JButton btnOk;
 	private JButton btnReset;
 	private JButton btnCancel;
@@ -99,10 +99,10 @@ public class ParamVisualisation extends JFrame
 		image.updateAndDraw();
 		image.show();
 		image.getWindow().setLocation(505, 20);
-		canvas_1 = image.getCanvas();
+		canvas = image.getCanvas();
 		ImagePlus.addImageListener(this);
-		canvas_1.addKeyListener(this);
-		canvas_1.addMouseListener(this);
+		canvas.addKeyListener(this);
+		canvas.addMouseListener(this);
 
 		this.setBounds(20, 20, 500, 430);
 		GridBagLayout gridBagLayout = new GridBagLayout();
@@ -449,8 +449,8 @@ public class ParamVisualisation extends JFrame
 		rdbtnNoRejection.removeChangeListener(this);
 		rdbtnRejectCellIn.removeChangeListener(this);
 		rdbtnRejectAWhole.removeChangeListener(this);
-		canvas_1.removeKeyListener(this);
-		canvas_1.removeMouseListener(this);
+		canvas.removeKeyListener(this);
+		canvas.removeMouseListener(this);
 		btnOk.removeChangeListener(this);
 		btnReset.removeChangeListener(this);
 		btnCancel.removeChangeListener(this);
@@ -517,8 +517,8 @@ public class ParamVisualisation extends JFrame
 	@Override
 	public void mouseClicked(MouseEvent e) {
 		if (paramTemp.postRejectCellFrame || paramTemp.postRejectWholeCell) {
-			int x = canvas_1.offScreenX(e.getX());
-			int y = canvas_1.offScreenY(e.getY());
+			int x = canvas.offScreenX(e.getX());
+			int y = canvas.offScreenY(e.getY());
 			int frame = image.getCurrentSlice() - 1;
 			for (int i = 0; i < results.cellData.size(); i++) {
 				CellDataR cell = results.cellData.get(i);
@@ -604,6 +604,10 @@ public class ParamVisualisation extends JFrame
 			frame = Math.min(frame + 1, image.getStackSize() - 1);
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT) {
 			frame = Math.max(frame - 1, 0);
+		} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			btnOk.setSelected(true);
+		} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			btnCancel.setSelected(true);
 		}
 		updateImage();
 	}
