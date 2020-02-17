@@ -95,7 +95,7 @@ public class Utils {
 	// Cf. http://introcs.cs.princeton.edu/java/35purple/Polygon.java.html &&
 	// http://mathworld.wolfram.com/PolygonArea.html
 	// return area of polygon
-	static double area(FloatPolygon polygon) {
+	public static double area(FloatPolygon polygon) {
 		return Math.abs(signedArea(polygon));
 	}
 

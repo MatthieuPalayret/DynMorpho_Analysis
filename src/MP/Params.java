@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.447;
+	public static final double version = 1.450;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -17,6 +17,7 @@ public class Params implements Cloneable {
 	public double frameLengthS = 20;
 	public boolean autoThreshold = false;
 	public int greyThreshold = 90;
+	public int greyThreshold2 = 90;
 	public double smoothingContour = 1; // Gaussian radius to smooth the image before detecting the contour
 	public double minCellSurface = 505; // in pixel² (~25 µm²)
 	public double maxCellSurface = 10000; // in pixel²
@@ -44,7 +45,7 @@ public class Params implements Cloneable {
 
 	// Internal hidden parameter
 	boolean finalAddedSlice = false;
-	boolean twoColourAnalysis = false;
+	public boolean twoColourAnalysis = false;
 
 	public Params() {
 		super();
@@ -93,13 +94,18 @@ public class Params implements Cloneable {
 	}
 
 	public int getNewParameters(ImagePlus img) {
-		ParamPreview pp = new ParamPreview(this, img);
+		ParamPreview pp;
+		if (twoColourAnalysis)
+			pp = new ParamPreviewTwoColour(this, img);
+		else
+			pp = new ParamPreview(this, img);
 		pp.run();
 		tagName = pp.params.tagName;
 		pixelSizeNm = pp.params.pixelSizeNm;
 		frameLengthS = pp.params.frameLengthS;
 		autoThreshold = pp.params.autoThreshold;
 		greyThreshold = pp.params.greyThreshold;
+		greyThreshold2 = pp.params.greyThreshold2;
 		smoothingContour = pp.params.smoothingContour;
 		minCellSurface = pp.params.minCellSurface;
 		maxCellSurface = pp.params.maxCellSurface;
@@ -123,6 +129,8 @@ public class Params implements Cloneable {
 		params.addValue("Frame length (s/frame)", frameLengthS);
 		params.addValue("Automatic intensity threshold?", autoThreshold ? 1 : 0);
 		params.addValue("Contour intensity threshold", greyThreshold);
+		if (twoColourAnalysis)
+			params.addValue("Contour intensity threshold", greyThreshold);
 		params.addValue("Smoothing coefficient for the contour", smoothingContour);
 		params.addValue("Minimal area of a cell (µm²)", minCellSurface * pixelSizeMm2);
 		params.addValue("Maximal area of a cell (µm²)", maxCellSurface * pixelSizeMm2);
@@ -151,6 +159,7 @@ public class Params implements Cloneable {
 		output.frameLengthS = this.frameLengthS;
 		output.autoThreshold = this.autoThreshold;
 		output.greyThreshold = this.greyThreshold;
+		output.greyThreshold2 = this.greyThreshold2;
 		output.smoothingContour = this.smoothingContour;
 		output.minCellSurface = this.minCellSurface;
 		output.maxCellSurface = this.maxCellSurface;
@@ -174,13 +183,15 @@ public class Params implements Cloneable {
 			output.childDir = new File(this.childDir.getAbsolutePath());
 
 		output.finalAddedSlice = this.finalAddedSlice;
+		output.twoColourAnalysis = this.twoColourAnalysis;
 		return output;
 	}
 
 	public boolean compare(Params params2) {
 		boolean identical = (this.tagName.equals(params2.tagName)) && (this.pixelSizeNm == params2.pixelSizeNm)
 				&& (this.frameLengthS == params2.frameLengthS) && (this.autoThreshold == params2.autoThreshold)
-				&& (this.greyThreshold == params2.greyThreshold) && (this.smoothingContour == params2.smoothingContour)
+				&& (this.greyThreshold == params2.greyThreshold) && (this.greyThreshold2 == params2.greyThreshold2)
+				&& (this.smoothingContour == params2.smoothingContour)
 				&& (this.minCellSurface == params2.minCellSurface) && (this.maxCellSurface == params2.maxCellSurface)
 
 				&& (this.curvatureMinLevel == params2.curvatureMinLevel)
@@ -195,8 +206,10 @@ public class Params implements Cloneable {
 				&& (this.postRejectWholeCell == params2.postRejectWholeCell)
 
 				&& (this.method == params2.method) && (this.reducingCoeff == params2.reducingCoeff)
-				&& (this.method == params2.method) && ((this.childDir == null && params2.childDir == null)
-						|| this.childDir.getAbsolutePath().equals(params2.childDir.getAbsolutePath()));
+				&& (this.method == params2.method)
+				&& ((this.childDir == null && params2.childDir == null)
+						|| this.childDir.getAbsolutePath().equals(params2.childDir.getAbsolutePath()))
+				&& (this.twoColourAnalysis == params2.twoColourAnalysis);
 		return identical;
 	}
 }

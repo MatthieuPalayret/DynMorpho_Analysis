@@ -44,43 +44,47 @@ public class ParamPreview extends JFrame
 	 */
 	private static final long serialVersionUID = -216989449160564702L;
 	protected Params params, paramTemp;
-	private ImagePlus image;
-	private ImageStack stack8bit;
-	private ImagePlus imageIni;
-	private int frame = 0;
+	protected ImagePlus image;
+	protected ImageStack stack8bit;
+	protected ImagePlus imageIni;
+	protected int frame = 0;
 
-	private static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
-	private JLabel lblGeneralParam;
-	private JLabel lblAdditionalTagTo;
-	private JTextField fieldAdditionalTag;
-	private JLabel lblPixelSizenm;
-	private JTextField fieldPixelSizenm;
-	private JLabel lblFrameLengths;
-	private JTextField fieldFrameLengths;
-	private JLabel lblParametersForAnalysis;
-	private JLabel lblAutomaticIntensityThreshold;
-	private JCheckBox chckbxAutomaticIntensityThreshold;
-	private JLabel lblContourIntensityThreshold;
-	private JSlider sliderContourIntensityThreshold;
-	private JTextField lblContourIntensityThreshold2;
-	private JLabel lblSmoothingContourCoefficient;
-	private JSlider sliderSmoothingContourCoefficient;
-	private JTextField lblSmoothingContourCoefficient2;
-	private JLabel lblMinimalAreaOf;
-	private JSlider sliderMinimalAreaOf;
-	private JTextField lblMinimalAreaOf2;
-	private JLabel lblMaximalAreaOf;
-	private JSlider sliderMaximalAreaOf;
-	private JTextField labelMaximalAreaOf2;
-	private ij.gui.ImageCanvas canvas;
-	private JButton btnOk;
-	private JButton btnReset;
-	private JButton btnCancel;
+	protected static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
+	protected JLabel lblGeneralParam;
+	protected JLabel lblAdditionalTagTo;
+	protected JTextField fieldAdditionalTag;
+	protected JLabel lblPixelSizenm;
+	protected JTextField fieldPixelSizenm;
+	protected JLabel lblFrameLengths;
+	protected JTextField fieldFrameLengths;
+	protected JLabel lblParametersForAnalysis;
+	protected JLabel lblAutomaticIntensityThreshold;
+	protected JCheckBox chckbxAutomaticIntensityThreshold;
+	protected JLabel lblContourIntensityThreshold;
+	protected JSlider sliderContourIntensityThreshold;
+	protected JTextField lblContourIntensityThreshold2;
+	protected JLabel lblSmoothingContourCoefficient;
+	protected JSlider sliderSmoothingContourCoefficient;
+	protected JTextField lblSmoothingContourCoefficient2;
+	protected JLabel lblMinimalAreaOf;
+	protected JSlider sliderMinimalAreaOf;
+	protected JTextField lblMinimalAreaOf2;
+	protected JLabel lblMaximalAreaOf;
+	protected JSlider sliderMaximalAreaOf;
+	protected JTextField labelMaximalAreaOf2;
+	protected ij.gui.ImageCanvas canvas;
+	protected JButton btnOk;
+	protected JButton btnReset;
+	protected JButton btnCancel;
 
 	final static int CANCEL = 1;
 	final static int FINISHED = 2;
 	final static int RUNNING = 0;
 	int finished = RUNNING;
+
+	public ParamPreview(String title) {
+		super(title);
+	}
 
 	public ParamPreview(Params params, ImagePlus img) {
 		super("Parameter preview...");
@@ -395,9 +399,9 @@ public class ParamPreview extends JFrame
 		somethingHappened(source);
 	}
 
-	private boolean sliderMoveAllowed = true;
+	protected boolean sliderMoveAllowed = true;
 
-	private void somethingHappened(Object source) {
+	protected void somethingHappened(Object source) {
 		if (source == fieldAdditionalTag) {
 			paramTemp.tagName = fieldAdditionalTag.getText();
 		} else if (source == fieldPixelSizenm) {
@@ -510,7 +514,7 @@ public class ParamPreview extends JFrame
 	public void keyReleased(KeyEvent e) {
 	}
 
-	private void disposeThis() {
+	protected void disposeThis() {
 		this.setVisible(false);
 		this.removeKeyListener(this);
 		fieldAdditionalTag.removeActionListener(this);
@@ -548,7 +552,7 @@ public class ParamPreview extends JFrame
 		return imageLock = true;
 	}
 
-	private void updateImage() {
+	protected void updateImage() {
 		if (aquireImageLock()) {
 			// Run in a new thread to allow the GUI to continue updating
 			new Thread(new Runnable() {
@@ -562,7 +566,7 @@ public class ParamPreview extends JFrame
 							Params paramtemp = paramTemp.clone();
 							int frameTemp = frame;
 							// Do something with parameters
-							updateAnalysis(paramtemp, frame);
+							updateAnalysis(paramtemp, frame, stack8bit, image);
 							// Check if the parameters have changed again
 							parametersChanged = !paramtemp.compare(paramTemp) || !(frameTemp == frame);
 						}
@@ -576,7 +580,7 @@ public class ParamPreview extends JFrame
 		}
 	}
 
-	private void updateAnalysis(Params paramTemp, int frame) {
+	static protected void updateAnalysis(Params paramTemp, int frame, ImageStack stack8bit, ImagePlus image) {
 		UserVariables uv = paramTemp.getUV();
 		uv = paramTemp.updateUV(uv);
 		uv.setAnalyseProtrusions(true);
@@ -611,7 +615,7 @@ public class ParamPreview extends JFrame
 		image.setOverlay(ov);
 	}
 
-	private void updateView(int frame) {
+	protected void updateView(int frame) {
 		image.setSliceWithoutUpdate(frame + 1);
 		canvas.repaint();
 		image.draw();

@@ -11,6 +11,8 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 
 		ZProjector zproj = new ZProjector(imp);
 		zproj.setMethod(ZProjector.MAX_METHOD);
+		zproj.setStartSlice(1);
+		zproj.setStopSlice(imp.getNSlices());
 		zproj.doHyperStackProjection(true);
 		imp = zproj.getProjection();
 	}
