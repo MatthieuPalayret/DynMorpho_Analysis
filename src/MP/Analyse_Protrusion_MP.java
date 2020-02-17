@@ -7,7 +7,6 @@ import java.util.ListIterator;
 
 import Cell.CellData;
 import IAClasses.Region;
-import Segmentation.RegionGrower;
 import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
@@ -251,11 +250,11 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		ArrayList<CellData> cellData = new ArrayList<>();
 		ImageProcessor cytoProc = stack.getProcessor(sliceIndex).duplicate();
 		(new GaussianBlur()).blurGaussian(cytoProc, uv.getGaussRad(), uv.getGaussRad(), 0.01);
-		int threshold = RegionGrower.getThreshold(cytoProc, uv.isAutoThreshold(), uv.getGreyThresh(),
+		int threshold = RegionGrowerMP.getThreshold(cytoProc, uv.isAutoThreshold(), uv.getGreyThresh(),
 				uv.getThreshMethod());
-		RegionGrower.initialiseROIs(null, -1, sliceIndex, cytoProc, roi, stacks[0].getWidth(), stacks[0].getHeight(),
+		RegionGrowerMP.initialiseROIs(null, -1, sliceIndex, cytoProc, roi, stacks[0].getWidth(), stacks[0].getHeight(),
 				stacks[0].getSize(), cellData, uv, protMode, selectiveOutput);
-		return RegionGrower.findCellRegions(cytoProc, threshold, cellData);
+		return RegionGrowerMP.findCellRegions(cytoProc, threshold, cellData);
 	}
 
 }

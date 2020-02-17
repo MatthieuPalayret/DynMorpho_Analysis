@@ -59,7 +59,6 @@ import IAClasses.Utils;
 import IO.DataWriter;
 import IO.PropertyWriter;
 import Output.MultiThreadedOutputGenerator;
-import Segmentation.RegionGrower;
 import TimeAndDate.TimeAndDate;
 import UserVariables.UserVariables;
 import UtilClasses.GenUtils;
@@ -287,7 +286,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 		cellData = new ArrayList<>();
 		ImageProcessor cytoImage = cytoStack.getProcessor(1).duplicate();
 		(new GaussianBlur()).blurGaussian(cytoImage, uv.getGaussRad(), uv.getGaussRad(), 0.01);
-		RegionGrower.initialiseROIs(null, -1, 1, cytoImage, roi, stacks[0].getWidth(), stacks[0].getHeight(),
+		RegionGrowerMP.initialiseROIs(null, -1, 1, cytoImage, roi, stacks[0].getWidth(), stacks[0].getHeight(),
 				stacks[0].getSize(), cellData, uv, protMode, selectiveOutput);
 
 		roi = null;
@@ -316,11 +315,11 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 			IJ.showStatus(String.format("Segmenting %d%%", (int) Math.round(i * 100.0 / cytoSize)));
 			cytoImage = cytoStack.getProcessor(i + 1).duplicate();
 			(new GaussianBlur()).blurGaussian(cytoImage, uv.getGaussRad(), uv.getGaussRad(), 0.01);
-			thresholds[i] = RegionGrower.getThreshold(cytoImage, uv.isAutoThreshold(), uv.getGreyThresh(),
+			thresholds[i] = RegionGrowerMP.getThreshold(cytoImage, uv.isAutoThreshold(), uv.getGreyThresh(),
 					uv.getThreshMethod());
 			int N = cellData.size();
 			if (cytoImage != null) {
-				allRegions.add(RegionGrower.findCellRegions(cytoImage, thresholds[i], cellData));
+				allRegions.add(RegionGrowerMP.findCellRegions(cytoImage, thresholds[i], cellData));
 			}
 			int fcount = 0;
 			for (int j = 0; j < N; j++) {
@@ -371,7 +370,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 				}
 			}
 			if (i > 0) {
-				RegionGrower.initialiseROIs(allMasks, thresholds[i], i + 2, cytoImage, roi, stacks[0].getWidth(),
+				RegionGrowerMP.initialiseROIs(allMasks, thresholds[i], i + 2, cytoImage, roi, stacks[0].getWidth(),
 						stacks[0].getHeight(), stacks[0].getSize(), cellData, uv, protMode, selectiveOutput);
 			}
 		}
@@ -967,12 +966,12 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 		ParticleAnalyzer analyzer = new ParticleAnalyzer(
 				ParticleAnalyzer.ADD_TO_MANAGER + ParticleAnalyzer.EXCLUDE_EDGE_PARTICLES + ParticleAnalyzer.SHOW_MASKS,
 				0, null, 0.0, Double.POSITIVE_INFINITY);
-		RegionGrower.analyzeDetections(manager, binmap, analyzer);
+		RegionGrowerMP.analyzeDetections(manager, binmap, analyzer);
 		ByteProcessor binmapnoedge = (ByteProcessor) analyzer.getOutputImage().getProcessor();
 		ByteProcessor flippedBinMap = new ByteProcessor(binmap.getWidth(), binmap.getHeight());
 		int offset = constructFlippedBinMap(binmap, binmapnoedge, flippedBinMap);
 		RoiManager manager2 = new RoiManager(true);
-		RegionGrower.analyzeDetections(manager2, flippedBinMap, analyzer);
+		RegionGrowerMP.analyzeDetections(manager2, flippedBinMap, analyzer);
 		copyRoisWithOffset(manager, manager2, offset);
 		cellData.setVelRois(manager.getRoisAsArray());
 	}
@@ -999,12 +998,12 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 				mask2.invert();
 				bb.copyBits(mask2, 0, 0, Blitter.SUBTRACT);
 			}
-			double minArea = RegionGrower.getMinFilArea(uv);
+			double minArea = RegionGrowerMP.getMinFilArea(uv);
 			ParticleAnalyzer analyzer = new ParticleAnalyzer(
 					ParticleAnalyzer.EXCLUDE_EDGE_PARTICLES + ParticleAnalyzer.SHOW_MASKS, 0, null, minArea,
 					Double.POSITIVE_INFINITY);
 			mask.invert();
-			RegionGrower.analyzeDetections(null, mask, analyzer);
+			RegionGrowerMP.analyzeDetections(null, mask, analyzer);
 			ImageProcessor analyzerMask = analyzer.getOutputImage().getProcessor();
 			analyzerMask.invertLut();
 			cyto2.addSlice(analyzerMask);
@@ -1271,12 +1270,12 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 		int width = cytoProc.getWidth();
 		int height = cytoProc.getHeight();
 		(new GaussianBlur()).blurGaussian(cytoProc, uv.getGaussRad(), uv.getGaussRad(), 0.01);
-		int threshold = RegionGrower.getThreshold(cytoProc, uv.isAutoThreshold(), uv.getGreyThresh(),
+		int threshold = RegionGrowerMP.getThreshold(cytoProc, uv.isAutoThreshold(), uv.getGreyThresh(),
 				uv.getThreshMethod());
-		int nCell = RegionGrower.initialiseROIs(null, -1, sliceIndex, cytoProc, roi, stacks[0].getWidth(),
+		int nCell = RegionGrowerMP.initialiseROIs(null, -1, sliceIndex, cytoProc, roi, stacks[0].getWidth(),
 				stacks[0].getHeight(), stacks[0].getSize(), cellData, uv, protMode, selectiveOutput);
 		Region[][] allRegions = new Region[nCell][stacks[0].getSize()];
-		ArrayList<Region> detectedRegions = RegionGrower.findCellRegions(cytoProc, threshold, cellData);
+		ArrayList<Region> detectedRegions = RegionGrowerMP.findCellRegions(cytoProc, threshold, cellData);
 		for (int k = 0; k < nCell; k++) {
 			allRegions[k][sliceIndex - 1] = detectedRegions.get(k);
 			cellData.get(k).setCellRegions(allRegions[k]);

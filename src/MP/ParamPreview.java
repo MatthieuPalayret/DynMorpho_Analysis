@@ -34,6 +34,7 @@ import ij.gui.Overlay;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
+import ij.process.StackStatistics;
 
 public class ParamPreview extends JFrame
 		implements ActionListener, ImageListener, ChangeListener, FocusListener, KeyListener {
@@ -213,7 +214,7 @@ public class ParamPreview extends JFrame
 		chckbxAutomaticIntensityThreshold.addActionListener(this);
 		getContentPane().add(chckbxAutomaticIntensityThreshold, gbc_chckbxNewCheckBox);
 
-		lblContourIntensityThreshold = new JLabel("Contour intensity threshold ([0.9 .. 1]):");
+		lblContourIntensityThreshold = new JLabel("Contour intensity threshold (photon counts):");
 		lblContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_lblContourIntensityThreshold = new GridBagConstraints();
 		gbc_lblContourIntensityThreshold.anchor = GridBagConstraints.EAST;
@@ -222,9 +223,9 @@ public class ParamPreview extends JFrame
 		gbc_lblContourIntensityThreshold.gridy = 8;
 		getContentPane().add(lblContourIntensityThreshold, gbc_lblContourIntensityThreshold);
 
-		sliderContourIntensityThreshold = new JSlider();
+		sliderContourIntensityThreshold = new JSlider(0, (int) (new StackStatistics(image).max + 0.5),
+				paramTemp.greyThreshold);
 		sliderContourIntensityThreshold.setFont(font);
-		sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
 		GridBagConstraints gbc_slider = new GridBagConstraints();
 		gbc_slider.fill = GridBagConstraints.HORIZONTAL;
 		gbc_slider.insets = new Insets(0, 0, 5, 5);
@@ -233,8 +234,7 @@ public class ParamPreview extends JFrame
 		sliderContourIntensityThreshold.addChangeListener(this);
 		getContentPane().add(sliderContourIntensityThreshold, gbc_slider);
 
-		lblContourIntensityThreshold2 = new JTextField(
-				IJ.d2s((sliderContourIntensityThreshold.getValue()) / 1000.0D + 0.9, 3));
+		lblContourIntensityThreshold2 = new JTextField(IJ.d2s(sliderContourIntensityThreshold.getValue(), 0));
 		lblContourIntensityThreshold2.setFont(font);
 		GridBagConstraints gbc_label = new GridBagConstraints();
 		gbc_label.fill = GridBagConstraints.HORIZONTAL;
@@ -408,9 +408,9 @@ public class ParamPreview extends JFrame
 			paramTemp.autoThreshold = chckbxAutomaticIntensityThreshold.isSelected();
 			updateImage();
 		} else if (source == lblContourIntensityThreshold2) {
-			paramTemp.greyThreshold = Double.parseDouble(lblContourIntensityThreshold2.getText());
+			paramTemp.greyThreshold = (int) Double.parseDouble(lblContourIntensityThreshold2.getText());
 			sliderMoveAllowed = false;
-			sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
+			sliderContourIntensityThreshold.setValue(paramTemp.greyThreshold);
 			updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == lblSmoothingContourCoefficient2) {
@@ -445,9 +445,8 @@ public class ParamPreview extends JFrame
 			fieldPixelSizenm.setText(IJ.d2s(paramTemp.pixelSizeNm, 1));
 			fieldFrameLengths.setText(IJ.d2s(paramTemp.frameLengthS, 2));
 			chckbxAutomaticIntensityThreshold.setSelected(paramTemp.autoThreshold);
-			sliderContourIntensityThreshold.setValue((int) ((paramTemp.greyThreshold - 0.9) * 1000.0));
-			lblContourIntensityThreshold2
-					.setText(IJ.d2s((sliderContourIntensityThreshold.getValue()) / 1000.0D + 0.9, 3));
+			sliderContourIntensityThreshold.setValue(paramTemp.greyThreshold);
+			lblContourIntensityThreshold2.setText(IJ.d2s(sliderContourIntensityThreshold.getValue(), 0));
 			sliderSmoothingContourCoefficient.setValue((int) ((paramTemp.smoothingContour) / 5.0 * 100.0));
 			lblSmoothingContourCoefficient2
 					.setText(IJ.d2s((sliderSmoothingContourCoefficient.getValue()) / 100.0D * 5.0D, 3));
@@ -470,8 +469,8 @@ public class ParamPreview extends JFrame
 		Object source = e.getSource();
 		if (sliderMoveAllowed) {
 			if (source == sliderContourIntensityThreshold) {
-				paramTemp.greyThreshold = sliderContourIntensityThreshold.getValue() / 1000.0D + 0.9;
-				lblContourIntensityThreshold2.setText(IJ.d2s(paramTemp.greyThreshold, 3));
+				paramTemp.greyThreshold = sliderContourIntensityThreshold.getValue();
+				lblContourIntensityThreshold2.setText(IJ.d2s(paramTemp.greyThreshold, 0));
 				updateImage();
 			} else if (source == sliderSmoothingContourCoefficient) {
 				paramTemp.smoothingContour = sliderSmoothingContourCoefficient.getValue() / 100.0D * 5.0D;
@@ -609,6 +608,7 @@ public class ParamPreview extends JFrame
 			ov.add(roi);
 			image.setOverlay(ov);
 		}
+		image.setOverlay(ov);
 	}
 
 	private void updateView(int frame) {

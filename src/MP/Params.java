@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.445;
+	public static final double version = 1.447;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -16,7 +16,7 @@ public class Params implements Cloneable {
 	public double pixelSizeNm = 320.5;
 	public double frameLengthS = 20;
 	public boolean autoThreshold = false;
-	public double greyThreshold = 0.98;
+	public int greyThreshold = 90;
 	public double smoothingContour = 1; // Gaussian radius to smooth the image before detecting the contour
 	public double minCellSurface = 505; // in pixel² (~25 µm²)
 	public double maxCellSurface = 10000; // in pixel²
@@ -44,6 +44,7 @@ public class Params implements Cloneable {
 
 	// Internal hidden parameter
 	boolean finalAddedSlice = false;
+	boolean twoColourAnalysis = false;
 
 	public Params() {
 		super();
@@ -73,7 +74,7 @@ public class Params implements Cloneable {
 
 		uv.setBlebDetect(false);
 		uv.setAutoThreshold(false);
-		uv.setGreyThresh(0.98);
+		uv.setGreyThresh(90);
 		uv.setAnalyseProtrusions(false);
 		uv.setDisplayPlots(false);
 		uv.setUseSigThresh(false);
