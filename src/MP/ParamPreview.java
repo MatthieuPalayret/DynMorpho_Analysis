@@ -34,7 +34,6 @@ import ij.gui.Overlay;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
-import ij.process.StackStatistics;
 
 public class ParamPreview extends JFrame
 		implements ActionListener, ImageListener, ChangeListener, FocusListener, KeyListener {
@@ -92,7 +91,7 @@ public class ParamPreview extends JFrame
 		this.params = params;
 		paramTemp = params.clone();
 		imageIni = img;
-		stack8bit = GenUtils.convertStack(img.getImageStack(), 8);
+		stack8bit = GenUtils.convertStack(img.getImageStack(), 8); // TODO
 		image = new ImagePlus("Previsualisation", GenUtils.convertStack(img, 32).getImageStack());
 		frame = image.getCurrentSlice() - 1;
 
@@ -218,7 +217,7 @@ public class ParamPreview extends JFrame
 		chckbxAutomaticIntensityThreshold.addActionListener(this);
 		getContentPane().add(chckbxAutomaticIntensityThreshold, gbc_chckbxNewCheckBox);
 
-		lblContourIntensityThreshold = new JLabel("Contour intensity threshold (photon counts):");
+		lblContourIntensityThreshold = new JLabel("Contour intensity threshold [0 .. 255]:");
 		lblContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_lblContourIntensityThreshold = new GridBagConstraints();
 		gbc_lblContourIntensityThreshold.anchor = GridBagConstraints.EAST;
@@ -227,8 +226,7 @@ public class ParamPreview extends JFrame
 		gbc_lblContourIntensityThreshold.gridy = 8;
 		getContentPane().add(lblContourIntensityThreshold, gbc_lblContourIntensityThreshold);
 
-		sliderContourIntensityThreshold = new JSlider(0, (int) (new StackStatistics(image).max + 0.5),
-				paramTemp.greyThreshold);
+		sliderContourIntensityThreshold = new JSlider(0, 255, paramTemp.greyThreshold);
 		sliderContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_slider = new GridBagConstraints();
 		gbc_slider.fill = GridBagConstraints.HORIZONTAL;
@@ -238,6 +236,7 @@ public class ParamPreview extends JFrame
 		sliderContourIntensityThreshold.addChangeListener(this);
 		getContentPane().add(sliderContourIntensityThreshold, gbc_slider);
 
+		// TODO (int) (new StackStatistics(image).max + 0.5)
 		lblContourIntensityThreshold2 = new JTextField(IJ.d2s(sliderContourIntensityThreshold.getValue(), 0));
 		lblContourIntensityThreshold2.setFont(font);
 		GridBagConstraints gbc_label = new GridBagConstraints();

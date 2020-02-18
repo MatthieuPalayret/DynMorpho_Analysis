@@ -39,9 +39,10 @@ public class RegionGrowerMP extends RegionGrower {
 			if (threshold < 0) {
 				threshold = getThreshold(input, uv.isAutoThreshold(), uv.getGreyThresh(), uv.getThreshMethod());
 			}
+
 			ByteProcessor binary = input.convertToByteProcessor(true);
-			// TODO
-			binary.threshold((int) (threshold * 255.0 / (input.getStatistics().max - input.getStatistics().min)));
+
+			binary.threshold(threshold);
 			if (masks != null) {
 				ByteBlitter bb = new ByteBlitter(binary);
 				bb.copyBits(masks, 0, 0, Blitter.SUBTRACT);

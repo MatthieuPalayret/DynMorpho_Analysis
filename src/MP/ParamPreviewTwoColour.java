@@ -61,12 +61,12 @@ public class ParamPreviewTwoColour extends ParamPreview {
 		image.show();
 		image.getWindow().setLocation(505, 20);
 		canvas = image.getCanvas();
-		IJ.run("Enhance Contrast", "saturated=0.35");
+		IJ.resetMinAndMax(image);
 		image2.updateAndDraw();
 		image2.show();
 		image2.getWindow().setLocation(1010, 20);
 		canvas2 = image2.getCanvas();
-		IJ.run("Enhance Contrast", "saturated=0.35");
+		IJ.resetMinAndMax(image2);
 		ImagePlus.addImageListener(this);
 
 		this.setBounds(20, 20, 500, 400);
@@ -422,7 +422,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 				ImagePlus impTemp = new Duplicator().run(imageIni, channel1, channel1, 1, 1, 1, imageIni.getNFrames());
 				stack8bit = GenUtils.convertStack(impTemp.getImageStack(), 8);
 				image.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
-				IJ.run("Enhance Contrast", "saturated=0.35");
+				IJ.resetMinAndMax(image);
 				updateImage();
 			}
 		} else if (source == comboboxChannel2) {
@@ -432,7 +432,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 				ImagePlus impTemp = new Duplicator().run(imageIni, channel2, channel2, 1, 1, 1, imageIni.getNFrames());
 				stack8bit2 = GenUtils.convertStack(impTemp.getImageStack(), 8);
 				image2.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
-				IJ.run("Enhance Contrast", "saturated=0.35");
+				IJ.resetMinAndMax(image2);
 				updateImage();
 			}
 		} else if (source == lblContourIntensityThreshold_2) {

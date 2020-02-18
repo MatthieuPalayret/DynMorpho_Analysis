@@ -30,7 +30,7 @@ public class Open_MP implements PlugIn {
 	public void run(String arg0) {
 		imp = IJ.openImage(path + File.separator + "stack-ini.tif");
 		imp.show();
-		IJ.run("Enhance Contrast", "saturated=0.35");
+		IJ.resetMinAndMax(imp);
 
 		RoiManager rm = ij.plugin.frame.RoiManager.getRoiManager();
 		rm.runCommand("Open", path + File.separator + "stack-RoiSet.zip");

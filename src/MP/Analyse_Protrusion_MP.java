@@ -55,7 +55,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 
 	@Override
 	public void run(String subClass) {
-		IJ.run("Enhance Contrast", "saturated=0.35");
+		IJ.resetMinAndMax(imp);
 
 		IJ.log("Choose parameters to determine the cell contours... Legend:");
 		IJ.log("- Blue: selected cell contours.");
