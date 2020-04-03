@@ -190,7 +190,8 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			String addTag = "";
 			if (params.tagName.length() > 0)
 				addTag = "-" + params.tagName;
-			String parDirName = GenUtils.openResultsDirectory(directory + delimiter + cytoImp.getShortTitle() + addTag);
+			String parDirName = GenUtils
+					.openResultsDirectory(directory + delimiter + cytoImp.getOriginalFileInfo().fileName + addTag);
 			parDir = new File(parDirName);
 		}
 		popDir = parDir;

@@ -20,6 +20,7 @@ import ij.gui.Overlay;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
+import ij.process.LUT;
 
 public class ParamVisualisationTwoColour extends ParamVisualisation {
 
@@ -47,21 +48,27 @@ public class ParamVisualisationTwoColour extends ParamVisualisation {
 		image = new ImagePlus("Visualisation - Green channel", stackGreen);
 		image = new ImagePlus("Visualisation - Green channel", GenUtils.convertStack(image, 32).getImageStack());
 		frame = image.getCurrentSlice() - 1;
+		image.setLut(LUT.createLutFromColor(Color.GREEN));
+
 		imageRed = new ImagePlus("Visualisation - Red channel", stackRed);
 		imageRed = new ImagePlus("Visualisation - Red channel", GenUtils.convertStack(imageRed, 32).getImageStack());
 		imageRed.setSlice(frame + 1);
+		imageRed.setLut(LUT.createLutFromColor(Color.RED));
 
 		initialiseAllGreenRedCellExchange();
 
 		image.updateAndDraw();
 		image.show();
+		IJ.run("Enhance Contrast", "saturated=0.35");
 		image.getWindow().setLocation(505, 20);
 		canvas = image.getCanvas();
 		ImagePlus.addImageListener(this);
 		canvas.addKeyListener(this);
 		canvas.addMouseListener(this);
+
 		imageRed.updateAndDraw();
 		imageRed.show();
+		IJ.run("Enhance Contrast", "saturated=0.35");
 		imageRed.getWindow().setLocation(1010, 20);
 		canvasRed = imageRed.getCanvas();
 		canvasRed.addKeyListener(this);
@@ -218,8 +225,9 @@ public class ParamVisualisationTwoColour extends ParamVisualisation {
 		rdbtnExchangeGreenRedCell.removeActionListener(this);
 		super.disposeThis();
 
+		IJ.selectWindow("Visualisation - Red channel");
 		ImagePlus temp = IJ.getImage();
-		if (temp != null && temp.getTitle().startsWith("Visualisation"))
+		if (temp != null && temp.getTitle().startsWith("Visualisation - Red channel"))
 			temp.close();
 	}
 

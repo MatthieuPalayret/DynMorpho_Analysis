@@ -10,16 +10,7 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 
 	public Two_Colour_Analysis() {
 		super();
-
 		params.twoColourAnalysis = true;
-
-		/**
-		 * ZProjector zproj = new ZProjector(imp);
-		 * zproj.setMethod(ZProjector.MAX_METHOD); zproj.setStartSlice(1);
-		 * zproj.setStopSlice(imp.getNSlices()); zproj.doHyperStackProjection(true); imp
-		 * = zproj.getProjection();
-		 **/
-
 	}
 
 	@Override
@@ -38,12 +29,11 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 		}
 		uv = params.updateUV(uv);
 
-		ImagePlus image = new Duplicator().run(imp, params.channel2, params.channel2, 1, 1, 1, imp.getNFrames());
+		ImagePlus image = new Duplicator().run(imp, params.channel1, params.channel1, 1, 1, 1, imp.getNFrames());
 		imp.hide();
 		IJ.resetMinAndMax(image);
 		image.show();
 		Params paramMemo = params.clone();
-		params.greyThreshold = paramMemo.greyThreshold2;
 		params.twoColourAnalysis = false;
 		uv = params.updateUV(uv);
 		batchMode = true;
@@ -51,18 +41,18 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 		params = paramMemo;
 		image.close();
 
-		image = new Duplicator().run(imp, params.channel1, params.channel1, 1, 1, 1, imp.getNFrames());
+		image = new Duplicator().run(imp, params.channel2, params.channel2, 1, 1, 1, imp.getNFrames());
 		IJ.resetMinAndMax(image);
 		image.show();
-		// Utils.saveTiff(image, directory + File.separator + "Channel1.tiff", false);
-		Analyse_Protrusion_MP channel1_Analysis = new Analyse_Protrusion_MP();
-		channel1_Analysis.params = params.clone();
-		channel1_Analysis.params.twoColourAnalysis = false;
-		channel1_Analysis.uv = params.updateUV(uv);
-		channel1_Analysis.batchMode = true;
-		channel1_Analysis.parDir = new File(parDir + File.separator + "RedChannel");
-		channel1_Analysis.parDir.mkdirs();
-		channel1_Analysis.runFromAnalyseMovieMP("");
+		Analyse_Protrusion_MP channel2_Analysis = new Analyse_Protrusion_MP();
+		channel2_Analysis.params = params.clone();
+		channel2_Analysis.params.twoColourAnalysis = false;
+		channel2_Analysis.params.greyThreshold = params.greyThreshold2;
+		channel2_Analysis.uv = channel2_Analysis.params.updateUV(uv);
+		channel2_Analysis.batchMode = true;
+		channel2_Analysis.parDir = new File(parDir + File.separator + "RedChannel");
+		channel2_Analysis.parDir.mkdirs();
+		channel2_Analysis.runFromAnalyseMovieMP("");
 
 		params.setChildDir(parDir);
 
@@ -70,9 +60,9 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 			IJ.log("Building protrusions...");
 			Results res = new Results(this.getCellData(), this.stacks[0].getSize(), params);
 			res.buildProtrusions(image, false);
-			Results resRed = new Results(channel1_Analysis.getCellData(), channel1_Analysis.stacks[0].getSize(),
+			Results resRed = new Results(channel2_Analysis.getCellData(), channel2_Analysis.stacks[0].getSize(),
 					params);
-			resRed.buildProtrusions(image, false);
+			resRed.buildProtrusions(image, false, true);
 
 			IJ.log("Protrusions built.");
 
@@ -85,7 +75,7 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 			IJ.log("[- Dark yellow: cell rejected in a single frame because of 'technical' issue.]");
 			IJ.log("NB: No uropod is detected in the 1st frame of a trajectory.");
 			ParamVisualisation pm = new ParamVisualisationTwoColour(params, res, stacks[0], resRed,
-					channel1_Analysis.stacks[0]);
+					channel2_Analysis.stacks[0]);
 			pm.run();
 			if (pm.finished == ParamVisualisation.CANCEL) {
 				imp.show();
@@ -95,6 +85,11 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 				this.run(subClass);
 				return;
 			}
+
+			IJ.selectWindow("Visualisation - Green channel");
+			ImagePlus temp = IJ.getImage();
+			if (temp != null && temp.getTitle().startsWith("Visualisation - Green channel"))
+				temp.close();
 
 			new Open_MP(parDir.getAbsolutePath(), new ImagePlus()).run("");
 			res.kill();

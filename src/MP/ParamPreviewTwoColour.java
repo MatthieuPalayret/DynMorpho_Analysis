@@ -19,6 +19,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.Duplicator;
+import ij.process.LUT;
 import ij.process.StackStatistics;
 
 public class ParamPreviewTwoColour extends ParamPreview {
@@ -32,6 +33,8 @@ public class ParamPreviewTwoColour extends ParamPreview {
 	protected int channel1 = 1;
 	protected int channel2 = 2;
 	protected ij.gui.ImageCanvas canvas2;
+	private final String image1Name = "Previsualisation-Green_channel";
+	private final String image2Name = "Previsualisation-Red_channel";
 
 	private JLabel lblChannels;
 	private JComboBox<String> comboboxChannel1;
@@ -52,24 +55,31 @@ public class ParamPreviewTwoColour extends ParamPreview {
 		ImagePlus impTemp1 = new Duplicator().run(img, channel1, channel1, 1, 1, 1, img.getNFrames());
 		IJ.resetMinAndMax(impTemp1);
 		stack8bit = GenUtils.convertStack(impTemp1.getImageStack(), 8);
-		image = new ImagePlus("Previsualisation-Red_channel", GenUtils.convertStack(impTemp1, 32).getImageStack());
+
+		image = new ImagePlus(image1Name, GenUtils.convertStack(impTemp1, 32).getImageStack());
 		frame = image.getCurrentSlice() - 1;
+
 		ImagePlus impTemp2 = new Duplicator().run(img, channel2, channel2, 1, 1, 1, img.getNFrames());
 		IJ.resetMinAndMax(impTemp2);
 		stack8bit2 = GenUtils.convertStack(impTemp2.getImageStack(), 8);
-		image2 = new ImagePlus("Previsualisation-Green_channel", GenUtils.convertStack(impTemp2, 32).getImageStack());
+
+		image2 = new ImagePlus(image2Name, GenUtils.convertStack(impTemp2, 32).getImageStack());
 		image2.setSlice(frame + 1);
 
 		image.updateAndDraw();
 		image.show();
 		image.getWindow().setLocation(505, 20);
 		canvas = image.getCanvas();
-		IJ.resetMinAndMax(image);
+		image.setLut(LUT.createLutFromColor(Color.GREEN));
+		IJ.run("Enhance Contrast", "saturated=0.35");
+
 		image2.updateAndDraw();
 		image2.show();
 		image2.getWindow().setLocation(1010, 20);
 		canvas2 = image2.getCanvas();
-		IJ.resetMinAndMax(image2);
+		image2.setLut(LUT.createLutFromColor(Color.RED));
+		IJ.run("Enhance Contrast", "saturated=0.35");
+
 		ImagePlus.addImageListener(this);
 
 		this.setBounds(20, 20, 500, 400);
@@ -169,12 +179,12 @@ public class ParamPreviewTwoColour extends ParamPreview {
 
 		String[] channels = new String[imageIni.getNChannels()];
 		for (int i = 0; i < channels.length; i++)
-			channels[i] = IJ.d2s(i + 1);
+			channels[i] = IJ.d2s(i + 1, 0);
 		comboboxChannel1 = new JComboBox<String>(new DefaultComboBoxModel<String>(channels));
 		comboboxChannel1.setSelectedIndex(channel1 - 1);
 		comboboxChannel1.setFont(font);
 		comboboxChannel1.setEditable(false);
-		comboboxChannel1.setBackground(new Color(255, 99, 71));
+		comboboxChannel1.setBackground(new Color(144, 238, 144));
 		GridBagConstraints gbc_comboboxChannel1 = new GridBagConstraints();
 		gbc_comboboxChannel1.insets = new Insets(0, 0, 5, 5);
 		gbc_comboboxChannel1.gridx = 2;
@@ -186,7 +196,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 		comboboxChannel2.setSelectedIndex(channel2 - 1);
 		comboboxChannel2.setFont(font);
 		comboboxChannel2.setEditable(false);
-		comboboxChannel2.setBackground(new Color(144, 238, 144));
+		comboboxChannel2.setBackground(new Color(255, 99, 71));
 		GridBagConstraints gbc_comboboxChannel2 = new GridBagConstraints();
 		gbc_comboboxChannel2.insets = new Insets(0, 0, 5, 5);
 		gbc_comboboxChannel2.gridx = 3;
@@ -423,9 +433,13 @@ public class ParamPreviewTwoColour extends ParamPreview {
 			if (newChannel > 0 && newChannel != channel1) {
 				channel1 = newChannel;
 				ImagePlus impTemp = new Duplicator().run(imageIni, channel1, channel1, 1, 1, 1, imageIni.getNFrames());
+				IJ.resetMinAndMax(impTemp);
 				stack8bit = GenUtils.convertStack(impTemp.getImageStack(), 8);
+
 				image.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
-				IJ.resetMinAndMax(image);
+				image.setLut(LUT.createLutFromColor(Color.GREEN));
+				IJ.selectWindow(image1Name);
+				IJ.run("Enhance Contrast", "saturated=0.35");
 				paramTemp.channel1 = channel1;
 				updateImage();
 			}
@@ -434,9 +448,13 @@ public class ParamPreviewTwoColour extends ParamPreview {
 			if (newChannel > 0 && newChannel != channel2) {
 				channel2 = newChannel;
 				ImagePlus impTemp = new Duplicator().run(imageIni, channel2, channel2, 1, 1, 1, imageIni.getNFrames());
+				IJ.resetMinAndMax(impTemp);
 				stack8bit2 = GenUtils.convertStack(impTemp.getImageStack(), 8);
+
 				image2.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
-				IJ.resetMinAndMax(image2);
+				image2.setLut(LUT.createLutFromColor(Color.RED));
+				IJ.selectWindow(image2Name);
+				IJ.run("Enhance Contrast", "saturated=0.35");
 				paramTemp.channel2 = channel2;
 				updateImage();
 			}
