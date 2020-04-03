@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.452;
+	public static final double version = 1.471;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -33,6 +33,7 @@ public class Params implements Cloneable {
 
 	public boolean postRejectCellFrame = false;
 	public boolean postRejectWholeCell = false;
+	public boolean postExchangeGreenRedCell = false;
 
 	// Parameters not shown in official version
 	public int method = 1;
@@ -46,6 +47,8 @@ public class Params implements Cloneable {
 	// Internal hidden parameter
 	boolean finalAddedSlice = false;
 	public boolean twoColourAnalysis = false;
+	public int channel1 = 1;
+	public int channel2 = 2;
 
 	public Params() {
 		super();
@@ -109,6 +112,8 @@ public class Params implements Cloneable {
 		smoothingContour = pp.params.smoothingContour;
 		minCellSurface = pp.params.minCellSurface;
 		maxCellSurface = pp.params.maxCellSurface;
+		channel1 = pp.params.channel1;
+		channel2 = pp.params.channel2;
 		return pp.finished;
 	}
 
@@ -130,7 +135,7 @@ public class Params implements Cloneable {
 		params.addValue("Automatic intensity threshold?", autoThreshold ? 1 : 0);
 		params.addValue("Contour intensity threshold", greyThreshold);
 		if (twoColourAnalysis)
-			params.addValue("Contour intensity threshold", greyThreshold);
+			params.addValue("Contour intensity threshold2", greyThreshold2);
 		params.addValue("Smoothing coefficient for the contour", smoothingContour);
 		params.addValue("Minimal area of a cell (µm²)", minCellSurface * pixelSizeMm2);
 		params.addValue("Maximal area of a cell (µm²)", maxCellSurface * pixelSizeMm2);
@@ -142,6 +147,12 @@ public class Params implements Cloneable {
 		params.addValue("Maximal protrusion to cell surface ratio", maxProtrusionToCellAreaRatio);
 		params.addValue("Smoothing window (pix)", smoothingCoeffInPixels);
 		params.addValue("Detect uropod?", detectUropod ? 1 : 0);
+
+		if (twoColourAnalysis) {
+			params.addValue("Two colour analysis", 1);
+			params.addValue("Red channel", channel1);
+			params.addValue("Green channel", channel2);
+		}
 
 		if (!officialVersion) {
 			params.addValue("Reducing coefficient (if applicable)", reducingCoeff);
@@ -174,6 +185,7 @@ public class Params implements Cloneable {
 
 		output.postRejectCellFrame = this.postRejectCellFrame;
 		output.postRejectWholeCell = this.postRejectWholeCell;
+		output.postExchangeGreenRedCell = this.postExchangeGreenRedCell;
 
 		output.method = this.method;
 		output.reducingCoeff = this.reducingCoeff;
@@ -184,6 +196,8 @@ public class Params implements Cloneable {
 
 		output.finalAddedSlice = this.finalAddedSlice;
 		output.twoColourAnalysis = this.twoColourAnalysis;
+		output.channel1 = this.channel1;
+		output.channel2 = this.channel2;
 		return output;
 	}
 
@@ -204,12 +218,14 @@ public class Params implements Cloneable {
 
 				&& (this.postRejectCellFrame == params2.postRejectCellFrame) && (this.test == params2.test)
 				&& (this.postRejectWholeCell == params2.postRejectWholeCell)
+				&& (this.postExchangeGreenRedCell == params2.postExchangeGreenRedCell)
 
 				&& (this.method == params2.method) && (this.reducingCoeff == params2.reducingCoeff)
 				&& (this.method == params2.method)
 				&& ((this.childDir == null && params2.childDir == null)
 						|| this.childDir.getAbsolutePath().equals(params2.childDir.getAbsolutePath()))
-				&& (this.twoColourAnalysis == params2.twoColourAnalysis);
+				&& (this.twoColourAnalysis == params2.twoColourAnalysis) && (this.channel1 == params2.channel1)
+				&& (this.channel2 == params2.channel2);
 		return identical;
 	}
 }

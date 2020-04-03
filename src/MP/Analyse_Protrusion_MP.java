@@ -2,12 +2,17 @@ package MP;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
 import Cell.CellData;
+import DateAndTime.Time;
 import IAClasses.Region;
+import IO.PropertyWriter;
+import TimeAndDate.TimeAndDate;
 import UtilClasses.GenUtils;
+import UtilClasses.Utilities;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -68,14 +73,14 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		}
 		uv = params.updateUV(uv);
 
-		super.run("");
+		runFromAnalyseMovieMP("");
 
 		params.setChildDir(parDir);
 
 		if (subClass == null || subClass.isEmpty()) {
 			IJ.log("Building protrusions...");
-			Results res = new Results(this.getCellData(), params, this.stacks[0].getSize());
-			res.buildProtrusions(false);
+			Results res = new Results(this.getCellData(), this.stacks[0].getSize(), params);
+			res.buildProtrusions(imp, false);
 			IJ.log("Protrusions built.");
 
 			IJ.log("Let's play with the parameters... Legend:");
@@ -91,8 +96,8 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			if (pm.finished == ParamVisualisation.CANCEL) {
 				imp.show();
 				IJ.log("Back to step 1...");
-				super.batchMode = true;
-				super.directory = parDir;
+				batchMode = true;
+				directory = parDir;
 				this.run(subClass);
 				return;
 			}
@@ -102,6 +107,39 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			IJ.log("End of MP Protrusion analyses.");
 		}
 
+	}
+
+	public void runFromAnalyseMovieMP(String arg) {
+		LocalDateTime startTime = LocalDateTime.now();
+
+		TITLE = TITLE + "_v" + Revision.Revision.VERSION + "." + numFormat.format(Revision.Revision.revisionNumber);
+		IJ.log(TITLE);
+		IJ.log(TimeAndDate.getCurrentTimeAndDate());
+		if (IJ.getInstance() != null && WindowManager.getIDList() == null) {
+			IJ.error("No Images Open.");
+			return;
+		}
+		try {
+			if (!batchMode) {
+				directory = Utilities.getFolder(directory, "Specify directory for output files...", true);
+				// Specify directory for output
+			}
+		} catch (Exception e) {
+			IJ.log(e.toString());
+		}
+		if (directory == null) {
+			return;
+		}
+		IJ.log(String.format("Using %d parallel processes.\n", Runtime.getRuntime().availableProcessors()));
+		analyse(arg);
+
+		try {
+			PropertyWriter.saveProperties(props, parDir.getAbsolutePath(), TITLE, true);
+		} catch (IOException e) {
+			IJ.log("Failed to create properties file.");
+		}
+		IJ.showStatus(TITLE + " done.");
+		IJ.log(Time.getDurationAsString(startTime));
 	}
 
 	protected static void addNewCell(ArrayList<CellData> cellData, int i, Region region, int size, int height,
@@ -148,11 +186,13 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 		 * Create new parent output directory - make sure directory name is unique so
 		 * old results are not overwritten
 		 */
-		String addTag = "";
-		if (params.tagName.length() > 0)
-			addTag = "-" + params.tagName;
-		String parDirName = GenUtils.openResultsDirectory(directory + delimiter + cytoImp.getShortTitle() + addTag);
-		parDir = new File(parDirName);
+		if (parDir == null) {
+			String addTag = "";
+			if (params.tagName.length() > 0)
+				addTag = "-" + params.tagName;
+			String parDirName = GenUtils.openResultsDirectory(directory + delimiter + cytoImp.getShortTitle() + addTag);
+			parDir = new File(parDirName);
+		}
 		popDir = parDir;
 		visDir = parDir;
 		cellsDir = parDir;

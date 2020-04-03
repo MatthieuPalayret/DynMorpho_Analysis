@@ -34,6 +34,7 @@ import ij.gui.Overlay;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
+import ij.process.StackStatistics;
 
 public class ParamPreview extends JFrame
 		implements ActionListener, ImageListener, ChangeListener, FocusListener, KeyListener {
@@ -80,6 +81,8 @@ public class ParamPreview extends JFrame
 	final static int FINISHED = 2;
 	final static int RUNNING = 0;
 	int finished = RUNNING;
+
+	protected ParamPreview thisClass = this;
 
 	public ParamPreview(String title) {
 		super(title);
@@ -217,7 +220,7 @@ public class ParamPreview extends JFrame
 		chckbxAutomaticIntensityThreshold.addActionListener(this);
 		getContentPane().add(chckbxAutomaticIntensityThreshold, gbc_chckbxNewCheckBox);
 
-		lblContourIntensityThreshold = new JLabel("Contour intensity threshold [0 .. 255]:");
+		lblContourIntensityThreshold = new JLabel("Contour intensity threshold (in photons):");
 		lblContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_lblContourIntensityThreshold = new GridBagConstraints();
 		gbc_lblContourIntensityThreshold.anchor = GridBagConstraints.EAST;
@@ -226,7 +229,8 @@ public class ParamPreview extends JFrame
 		gbc_lblContourIntensityThreshold.gridy = 8;
 		getContentPane().add(lblContourIntensityThreshold, gbc_lblContourIntensityThreshold);
 
-		sliderContourIntensityThreshold = new JSlider(0, 255, paramTemp.greyThreshold);
+		sliderContourIntensityThreshold = new JSlider(0, (int) (new StackStatistics(image).max + 0.5),
+				paramTemp.greyThreshold);
 		sliderContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_slider = new GridBagConstraints();
 		gbc_slider.fill = GridBagConstraints.HORIZONTAL;
@@ -236,7 +240,6 @@ public class ParamPreview extends JFrame
 		sliderContourIntensityThreshold.addChangeListener(this);
 		getContentPane().add(sliderContourIntensityThreshold, gbc_slider);
 
-		// TODO (int) (new StackStatistics(image).max + 0.5)
 		lblContourIntensityThreshold2 = new JTextField(IJ.d2s(sliderContourIntensityThreshold.getValue(), 0));
 		lblContourIntensityThreshold2.setFont(font);
 		GridBagConstraints gbc_label = new GridBagConstraints();
@@ -384,7 +387,7 @@ public class ParamPreview extends JFrame
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
-		somethingHappened(source);
+		thisClass.somethingHappened(source);
 	}
 
 	@Override
@@ -395,7 +398,7 @@ public class ParamPreview extends JFrame
 	@Override
 	public void focusLost(FocusEvent e) {
 		Object source = e.getSource();
-		somethingHappened(source);
+		thisClass.somethingHappened(source);
 	}
 
 	protected boolean sliderMoveAllowed = true;
@@ -409,32 +412,32 @@ public class ParamPreview extends JFrame
 			paramTemp.frameLengthS = Double.parseDouble(fieldFrameLengths.getText());
 		} else if (source == chckbxAutomaticIntensityThreshold) {
 			paramTemp.autoThreshold = chckbxAutomaticIntensityThreshold.isSelected();
-			updateImage();
+			thisClass.updateImage();
 		} else if (source == lblContourIntensityThreshold2) {
 			paramTemp.greyThreshold = (int) Double.parseDouble(lblContourIntensityThreshold2.getText());
 			sliderMoveAllowed = false;
 			sliderContourIntensityThreshold.setValue(paramTemp.greyThreshold);
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == lblSmoothingContourCoefficient2) {
 			paramTemp.smoothingContour = Double.parseDouble(lblSmoothingContourCoefficient2.getText());
 			sliderMoveAllowed = false;
 			sliderSmoothingContourCoefficient.setValue((int) (paramTemp.smoothingContour * 100.0 / 5.0D));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == lblMinimalAreaOf2) {
 			paramTemp.minCellSurface = Double.parseDouble(lblMinimalAreaOf2.getText())
 					/ paramTemp.getPixelSizeUmSquared();
 			sliderMoveAllowed = false;
 			sliderMinimalAreaOf.setValue((int) (paramTemp.minCellSurface * 100.0 / (5.0D * params.minCellSurface)));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == labelMaximalAreaOf2) {
 			paramTemp.maxCellSurface = Double.parseDouble(labelMaximalAreaOf2.getText())
 					/ paramTemp.getPixelSizeUmSquared();
 			sliderMoveAllowed = false;
 			sliderMaximalAreaOf.setValue((int) (paramTemp.maxCellSurface * 100.0 / (10.0D * params.maxCellSurface)));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == btnOk) {
 			params = paramTemp;
@@ -457,7 +460,7 @@ public class ParamPreview extends JFrame
 			lblMinimalAreaOf2.setText(IJ.d2s(paramTemp.minCellSurface * paramTemp.getPixelSizeUmSquared(), 1));
 			sliderMaximalAreaOf.setValue(10);
 			labelMaximalAreaOf2.setText(IJ.d2s(paramTemp.maxCellSurface * paramTemp.getPixelSizeUmSquared(), 0));
-			updateImage();
+			thisClass.updateImage();
 		} else if (source == btnCancel) {
 			ImagePlus.removeImageListener(this);
 			image.close();
@@ -474,19 +477,19 @@ public class ParamPreview extends JFrame
 			if (source == sliderContourIntensityThreshold) {
 				paramTemp.greyThreshold = sliderContourIntensityThreshold.getValue();
 				lblContourIntensityThreshold2.setText(IJ.d2s(paramTemp.greyThreshold, 0));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderSmoothingContourCoefficient) {
 				paramTemp.smoothingContour = sliderSmoothingContourCoefficient.getValue() / 100.0D * 5.0D;
 				lblSmoothingContourCoefficient2.setText(IJ.d2s(paramTemp.smoothingContour, 3));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderMinimalAreaOf) {
 				paramTemp.minCellSurface = sliderMinimalAreaOf.getValue() / 100.0D * 5.0D * params.minCellSurface;
 				lblMinimalAreaOf2.setText(IJ.d2s(paramTemp.minCellSurface * paramTemp.getPixelSizeUmSquared(), 1));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderMaximalAreaOf) {
 				paramTemp.maxCellSurface = sliderMaximalAreaOf.getValue() / 100.0D * 10.0D * params.maxCellSurface;
 				labelMaximalAreaOf2.setText(IJ.d2s(paramTemp.maxCellSurface * paramTemp.getPixelSizeUmSquared(), 0));
-				updateImage();
+				thisClass.updateImage();
 			}
 		}
 	}
@@ -506,7 +509,7 @@ public class ParamPreview extends JFrame
 		} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			btnCancel.setSelected(true);
 		}
-		updateImage();
+		thisClass.updateImage();
 	}
 
 	@Override
@@ -639,7 +642,7 @@ public class ParamPreview extends JFrame
 	public void imageUpdated(ImagePlus imp) {
 		if (imp == image && imp.getCurrentSlice() - 1 != frame) {
 			frame = imp.getCurrentSlice() - 1;
-			updateImage();
+			thisClass.updateImage();
 		}
 	}
 

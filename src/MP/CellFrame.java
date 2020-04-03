@@ -32,7 +32,6 @@ public class CellFrame {
 	private int frame;
 	private int[] trinary;
 	private Cell cell;
-	int reject = CellDataR.NOT_REJECTED;
 	private ResultsTableMt rt;
 	private ResultsTableMt linearityPrecised;
 	private Params params;
@@ -59,17 +58,22 @@ public class CellFrame {
 	}
 
 	private void rejectCell404() {
-		if (cell.rejectCell != CellDataR.NOT_REJECTED)
-			reject = cell.rejectCell;
-		else if (reject == CellDataR.NOT_REJECTED)
-			reject = CellDataR.REJECT_404;
+		if (whichRejection() == CellDataR.NOT_REJECTED)
+			cell.celldata.rejectFrame(frame, CellDataR.REJECT_404);
+	}
+
+	protected int whichRejection() {
+		if (cell.celldata.whichRejectionInFrame(frame) != CellDataR.NOT_REJECTED)
+			return cell.celldata.whichRejectionInFrame(frame);
+
+		return cell.rejectCell;
 	}
 
 	void setParams(Params paramsTemp) {
 		params = paramsTemp;
 	}
 
-	public void buildProtrusions(ImagePlus imp, boolean save) {
+	public void buildProtrusions(ImagePlus imp, boolean save, boolean redGreenMode) {
 		if (params.test)
 			IJ.log("Building protrusions...");
 		if (contourX == null) {
@@ -93,8 +97,8 @@ public class CellFrame {
 			}
 			if (params.test)
 				IJ.log("Building contour...");
-			buildContour(imp, frame + 1);
-			if (reject == CellDataR.NOT_REJECTED && cell.rejectCell == CellDataR.NOT_REJECTED
+			buildContour(imp, frame, save, redGreenMode);
+			if (!(redGreenMode) && whichRejection() == CellDataR.NOT_REJECTED
 					&& !(params.detectUropod && frame == cell.startFrame)) {
 				if (params.test)
 					IJ.log("Properly building protrusions...");
@@ -128,6 +132,7 @@ public class CellFrame {
 					rt.incrementCounter();
 					rt.addValue(ResultsTableMt.FRAME, frame);
 					rt.addValue(Results.CELL, cell.cellNumber);
+					rt.addValue(Results.COLOUR, cell.colour);
 					rt.addValue(Results.PROTRUSION, iteration);
 					rt.addValue(ResultsTableMt.X, polygon.xpoints[i]);
 					rt.addValue(ResultsTableMt.Y, polygon.ypoints[i]);
@@ -265,7 +270,7 @@ public class CellFrame {
 		}
 	}
 
-	public ImagePlus buildContour(ImagePlus imp, int frame) {
+	public ImagePlus buildContour(ImagePlus imp, int frame, boolean save, boolean redGreenMode) {
 		Overlay ov = null;
 		ImageCanvas ic = imp.getCanvas();
 		if (ic != null)
@@ -278,16 +283,18 @@ public class CellFrame {
 		PolygonRoi roi = new PolygonRoi(Utils.buildFloatPolygon(contourX, contourY), Roi.POLYGON);
 
 		roi.setStrokeColor(CellDataR.COLOR[cell.rejectCell]);
-		if (reject != CellDataR.NOT_REJECTED)
-			roi.setStrokeColor(CellDataR.COLOR[reject]);
-		if (reject == CellDataR.REJECT_WHOLE_TRAJ)
+		if ((redGreenMode || (save && params.twoColourAnalysis)) && cell.rejectCell == CellDataR.NOT_REJECTED)
+			roi.setStrokeColor(CellDataR.COLOR[cell.colour]);
+		if (whichRejection() != CellDataR.NOT_REJECTED)
+			roi.setStrokeColor(CellDataR.COLOR[whichRejection()]);
+		if (cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_WHOLE_TRAJ)
 			roi.setStrokeColor(CellDataR.COLOR[CellDataR.REJECT_WHOLE_TRAJ].brighter());
 
 		roi.setName("c" + cell.cellNumber);
-		if (reject != CellDataR.NOT_REJECTED || cell.rejectCell != CellDataR.NOT_REJECTED)
+		if (!(redGreenMode) && whichRejection() != CellDataR.NOT_REJECTED)
 			roi.setName(" ");
 		roi.setStrokeWidth(1.5);
-		roi.setPosition(frame);
+		roi.setPosition(frame + 1);
 		ov.add(roi);
 		imp.draw();
 
@@ -304,7 +311,7 @@ public class CellFrame {
 		for (int pixela = 0; pixela < trinary.length; pixela++) {
 			if (contour == null) {
 				bp.set((int) contourX[pixela], (int) contourY[pixela],
-						reject != CellDataR.NOT_REJECTED ? Utils.LOWER / 2 : Utils.LOWER);
+						whichRejection() != CellDataR.NOT_REJECTED ? Utils.LOWER / 2 : Utils.LOWER);
 			} else {
 				bp.set((int) contourX[pixela], (int) contourY[pixela], (int) contour2[pixela]);
 			}
@@ -474,6 +481,7 @@ public class CellFrame {
 			ov = imp.getOverlay();
 		if (ov == null)
 			ov = new Overlay();
+		imp.setOverlay(ov);
 
 		while (it.hasNext()) {
 			FloatPolygon polygon = it.next();
@@ -632,7 +640,7 @@ public class CellFrame {
 	// This only returns a non-null value if another protrusion (than the uropod) is
 	// detected. This is to prevent false uropod detection
 	double areaOfTheUropod() {
-		return (reject == CellDataR.NOT_REJECTED && params.detectUropod && thisPolIsUropod != null
+		return (whichRejection() == CellDataR.NOT_REJECTED && params.detectUropod && thisPolIsUropod != null
 				&& thisPolIsUropod[3] != NO_UROPOD && numberOfProtrusions() > 0)
 						? Utils.area(pols.get(thisPolIsUropod[3]))
 						: 0;
@@ -642,6 +650,7 @@ public class CellFrame {
 		double pixelSizeUm2 = Math.pow(params.pixelSizeNm / 1000.0D, 2);
 		linearityPrecised.incrementCounter();
 		linearityPrecised.addValue(Results.CELL, cell.cellNumber);
+		linearityPrecised.addValue(Results.COLOUR, cell.colour);
 		linearityPrecised.addValue(ResultsTableMt.FRAME, frame);
 		double[] linearDensity = linearDensityOfProtrusion();
 		linearityPrecised.addValue("DistOfTheProtrusionToTheLeadingEdge (%)", linearDensity[0]);
@@ -686,7 +695,7 @@ public class CellFrame {
 
 	int nextFrame() {
 		int i = frame + 1;
-		while (i <= cell.endFrame && cell.cellFrame[i].reject != CellDataR.NOT_REJECTED)
+		while (i <= cell.endFrame && cell.cellFrame[i].whichRejection() != CellDataR.NOT_REJECTED)
 			i++;
 		if (i > cell.endFrame)
 			return -1;
@@ -708,7 +717,7 @@ public class CellFrame {
 
 	int previousFrame() {
 		int i = frame - 1;
-		while (i >= cell.startFrame && cell.cellFrame[i].reject != CellDataR.NOT_REJECTED)
+		while (i >= cell.startFrame && cell.cellFrame[i].whichRejection() != CellDataR.NOT_REJECTED)
 			i--;
 		if (i < cell.startFrame)
 			return -1;

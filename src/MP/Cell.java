@@ -14,6 +14,7 @@ public class Cell {
 	private ResultsTableMt linearity, linearityPrecised;
 	private Params params;
 	int rejectCell = CellDataR.NOT_REJECTED;
+	int colour = CellDataR.GREEN;
 
 	public Cell(int frameNumber, int cellNumber, CellDataR celldata, ResultsTableMt linearity,
 			ResultsTableMt linearityPrecised, Params params) {
@@ -24,6 +25,7 @@ public class Cell {
 		this.celldata = celldata;
 		startFrame = celldata.getCellData().getStartFrame() - 1;
 		endFrame = celldata.getCellData().getEndFrame() - 1;
+		colour = celldata.whichOriginalCellColour();
 		this.linearity = linearity;
 		this.linearityPrecised = linearityPrecised;
 		trajectory = new double[endFrame - startFrame + 1][2];
@@ -33,9 +35,9 @@ public class Cell {
 		params = paramsTemp;
 	}
 
-	public void buildProtrusions(ImagePlus imp, boolean save) {
+	public void buildProtrusions(ImagePlus imp, boolean save, boolean redGreenMode) {
 		for (int frame = startFrame; frame <= endFrame; frame++) {
-			cellFrame[frame].buildProtrusions(imp, save);
+			cellFrame[frame].buildProtrusions(imp, save, redGreenMode);
 		}
 
 		if (save && rejectCell == CellDataR.NOT_REJECTED)
@@ -119,7 +121,7 @@ public class Cell {
 			return new double[] { -1, -1 };
 		double iteration = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED) {
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED) {
 				double[] temp = cellFrame[i].linearDensityOfProtrusion();
 				if (temp[0] > 0) {
 					result = Utils.plus(result, cellFrame[i].linearDensityOfProtrusion());
@@ -137,7 +139,7 @@ public class Cell {
 		if (numberOfNonRejectedFrames() <= 0)
 			return -1;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED)
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED)
 				result += cellFrame[i].circularityCoeff();
 		}
 		return result / (numberOfNonRejectedFrames());
@@ -146,7 +148,7 @@ public class Cell {
 	double numberOfProtrusions() {
 		double result = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED)
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED)
 				result += cellFrame[i].numberOfProtrusions();
 		}
 		return result / (numberOfNonRejectedFrames());
@@ -157,7 +159,7 @@ public class Cell {
 		double iteration = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
 			double add = cellFrame[i].avgSizeOfProtrusions();
-			if (add != 0 && cellFrame[i].reject == CellDataR.NOT_REJECTED) {
+			if (add != 0 && cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED) {
 				result += add;
 				iteration++;
 			}
@@ -170,7 +172,7 @@ public class Cell {
 	double avgAreaOfTheCell() {
 		double result = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED)
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED)
 				result += cellFrame[i].areaOfTheCell();
 		}
 		return result / (numberOfNonRejectedFrames());
@@ -184,7 +186,7 @@ public class Cell {
 		double result = 0;
 		double iteration = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED) {
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED) {
 				double temp = cellFrame[i].areaOfTheUropod();
 				if (temp > 0) {
 					result += temp;
@@ -200,7 +202,7 @@ public class Cell {
 	int numberOfNonRejectedFrames() {
 		int result = 0;
 		for (int i = startFrame; i <= endFrame; i++) {
-			if (cellFrame[i].reject == CellDataR.NOT_REJECTED) {
+			if (cellFrame[i].whichRejection() == CellDataR.NOT_REJECTED) {
 				result++;
 			}
 		}
@@ -208,13 +210,13 @@ public class Cell {
 	}
 
 	int getFirstNonRejectedFrame() {
-		if (cellFrame[startFrame].reject == CellDataR.NOT_REJECTED)
+		if (cellFrame[startFrame].whichRejection() == CellDataR.NOT_REJECTED)
 			return startFrame;
 		return cellFrame[startFrame].nextFrame();
 	}
 
 	int getLastNonRejectedFrame() {
-		if (cellFrame[endFrame].reject == CellDataR.NOT_REJECTED)
+		if (cellFrame[endFrame].whichRejection() == CellDataR.NOT_REJECTED)
 			return endFrame;
 		return cellFrame[endFrame].previousFrame();
 	}
@@ -224,6 +226,7 @@ public class Cell {
 
 		linearity.incrementCounter();
 		linearity.addValue(Results.CELL, cellNumber);
+		linearity.addValue(Results.COLOUR, colour);
 		linearity.addValue("LinearCoeffTraj", linearCoefficientOfTheTrajectory());
 		double[] avSp = averageSpeed();
 		double pixelSizeUm = params.pixelSizeNm / 1000.0D;

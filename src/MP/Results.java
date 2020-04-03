@@ -11,31 +11,28 @@ import java.util.ListIterator;
 import Cell.CellData;
 import ij.IJ;
 import ij.ImagePlus;
-import ij.ImageStack;
 import ij.gui.Overlay;
 import ij.plugin.filter.Analyzer;
-import ij.process.ByteProcessor;
 
 public class Results {
 
-	public static int CELL, PROTRUSION, AREA;
+	public static int CELL, PROTRUSION, AREA, COLOUR;
 
-	private static final String[] defaultHeadings = { "Cell", "Protrusion", "Area" };
+	private static final String[] defaultHeadings = { "Cell", "Protrusion", "Area", "Channel" };
 
 	LinkedList<Cell> cells;
 	int frameNumber;
 	ArrayList<CellDataR> cellData;
-	ImageStack stack = null;
-	ImagePlus imp = null;
+	// ImagePlus imp = null;
 	ResultsTableMt rt = new ResultsTableMt();
 	ResultsTableMt linearity = new ResultsTableMt(), linearityPrecised = new ResultsTableMt();
 	private Params params;
 
-	public Results(ArrayList<CellDataR> cellData, Params params) {
+	public Results(ArrayList<CellDataR> cellData, Params params, int frameNumber) {
 		this.params = params;
+		this.frameNumber = frameNumber;
 
 		this.cellData = cellData;
-		initialiseStack();
 
 		initialiseRt(rt, true);
 		initialiseRt(linearity, false);
@@ -45,6 +42,8 @@ public class Results {
 
 		buildCells();
 		splitCells();
+		updateTrajLengthRejection();
+		greenRedChannelUpdate();
 	}
 
 	private void detectProbableCellEncounter() {
@@ -91,66 +90,119 @@ public class Results {
 		}
 	}
 
-	private void splitCells() {
+	private void greenRedChannelUpdate() {
 		ListIterator<Cell> it = cells.listIterator();
 		while (it.hasNext()) {
 			Cell cell = it.next();
-			cell.cellNumber = it.previousIndex();
 
-			if (cell.endFrame >= cell.startFrame) {
-				updateTrajLengthRejection(cell);
-				int stopWholeCellRejection = cell.celldata.getStopWholeCellRejection();
-				if (!cell.celldata.isCellRejected()
-						|| (stopWholeCellRejection >= cell.startFrame && stopWholeCellRejection <= cell.endFrame)) {
-					boolean previousWasRejected = false;
-					boolean encounteredReject_Whole_Traj = false;
-					int ij = cell.startFrame;
-					while (ij <= cell.endFrame && (!previousWasRejected
-							|| (previousWasRejected && cell.cellFrame[ij].reject != CellDataR.NOT_REJECTED))) {
-						previousWasRejected = cell.cellFrame[ij].reject != CellDataR.NOT_REJECTED;
-
-						// - If locally, one finds REJECT_WHOLE_TRAJ, continue anyway until
-						// next rejection.
-						if (cell.celldata.whichRejectionInFrame(ij) == CellDataR.REJECT_WHOLE_TRAJ) {
-							previousWasRejected = false;
-							encounteredReject_Whole_Traj = true;
-						}
-
-						ij++;
+			// Get the original colour of the cell, and whether it was reversed
+			int originalCellColour = cell.celldata.whichOriginalCellColour();
+			int reverseCounts = 0;
+			for (int frame = cell.startFrame; frame <= cell.endFrame; frame++) {
+				if (cell.celldata.getStoreGreenRedChannel(frame))
+					reverseCounts++;
+			}
+			if ((reverseCounts % 2) == 0) {
+				cell.colour = originalCellColour;
+				if (reverseCounts > 0) {
+					for (int frame = cell.startFrame; frame <= cell.endFrame; frame++) {
+						if (cell.celldata.getStoreGreenRedChannel(frame))
+							cell.celldata.setStoreGreenRedChannel(frame);
 					}
-					previousWasRejected = false;
-
-					// - If stopWholeCellRejection != -1 and its frame is in cell,
-					// cancel REJECT_WHOLE_TRAJ in cellReject and each frame of cell,
-					// and cancel it in the corresponding cellData before erasing
-					// stopWholeCellRejection itself.
-					if (encounteredReject_Whole_Traj && stopWholeCellRejection >= cell.startFrame
-							&& stopWholeCellRejection < ij - 1) {
-						for (int k = cell.startFrame; k < ij - 1; k++) {
-							cell.celldata.rejectFrame(k, CellDataR.NOT_REJECTED);
-							cell.cellFrame[k].reject = CellDataR.NOT_REJECTED;
+				}
+			} else {
+				cell.colour = originalCellColour == CellDataR.GREEN ? CellDataR.RED : CellDataR.GREEN;
+				if (reverseCounts > 0) {
+					boolean firstTime = true;
+					for (int frame = cell.startFrame; frame <= cell.endFrame; frame++) {
+						if (cell.celldata.getStoreGreenRedChannel(frame)) {
+							if (firstTime)
+								firstTime = false;
+							else
+								cell.celldata.setStoreGreenRedChannel(frame);
 						}
-						cell.rejectCell = CellDataR.NOT_REJECTED;
-
-						cell.celldata.stopWholeCellRejection(-1);
-					} else if (encounteredReject_Whole_Traj) {
-						cell.rejectCell = CellDataR.REJECT_WHOLE_TRAJ;
-					}
-
-					if (ij <= cell.endFrame) {
-						splitCells(ij, it);
 					}
 				}
 			}
 		}
 	}
 
-	private void updateTrajLengthRejection(Cell cell) {
-		if (cell.rejectCell != CellDataR.REJECT_WHOLE_TRAJ) {
-			if (cell.getLastNonRejectedFrame() - cell.getFirstNonRejectedFrame() + 1 < params.minTrajLength)
-				cell.rejectCell = CellDataR.REJECT_TRAJ_LENGTH;
-			else
-				cell.rejectCell = CellDataR.NOT_REJECTED;
+	private void splitCells() {
+		ListIterator<Cell> it = cells.listIterator();
+		while (it.hasNext()) {
+			Cell cell = it.next();
+			cell.cellNumber = it.previousIndex();
+
+			if (cell.endFrame > cell.startFrame) { // Each new cell starts with the cut: newCell.startFrame = CutFrame
+				// Find next cut (REJECT_MANUAL, REJECT_DRAMATIC_CHANGE, or REJECT_404)
+				int nextCutFrame = -1;
+				int frame = cell.startFrame + 1;
+				while (frame <= cell.endFrame && nextCutFrame == -1) {
+					if (cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_MANUAL
+							|| cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_DRAMATIC_CHANGE
+							|| cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_404)
+						nextCutFrame = frame;
+					frame++;
+				}
+
+				if (nextCutFrame > cell.startFrame) {
+					// Cut the cell in two, and look in the first whether there is a
+					// REJECT_WHOLE_TRAJ or getStopWholeCellRejection() frame).
+					splitCells(nextCutFrame, it);
+					if (params.test)
+						IJ.log("Cell #" + cell.cellNumber + " split in two, from frame " + (cell.startFrame + 1)
+								+ " to frame " + nextCutFrame + ".");
+					updateRejectionStatusOfACell(cell);
+
+				} else {
+					// No cut was find until the end of the cell.
+					// Update the rejection status of the cell.
+					updateRejectionStatusOfACell(cell);
+				}
+			} else if (cell.endFrame == cell.startFrame) {
+				cell.rejectCell = cell.celldata.whichRejectionInFrame(cell.endFrame);
+			}
+		}
+	}
+
+	private void updateRejectionStatusOfACell(Cell cell) {
+		// If there is a getStopWholeCellRejection in one of the frames, remove all
+		// REJECT_WHOLE_TRAJ from the frames
+		int stopWholeCellRejection = cell.celldata.getStopWholeCellRejection();
+		if (stopWholeCellRejection >= 0 && stopWholeCellRejection >= cell.startFrame
+				&& stopWholeCellRejection <= cell.endFrame) {
+			for (int frame = cell.startFrame; frame <= cell.endFrame; frame++) {
+				if (cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_WHOLE_TRAJ)
+					cell.celldata.rejectFrame(frame, CellDataR.NOT_REJECTED);
+			}
+			cell.rejectCell = CellDataR.NOT_REJECTED;
+			cell.celldata.stopWholeCellRejection(-1);
+			if (params.test)
+				IJ.log("Cell #" + cell.cellNumber + " not rejected anymore, between frame " + (cell.startFrame + 1)
+						+ " and frame " + (cell.endFrame + 1) + ".");
+		} else { // If there is a REJECT_WHOLE_TRAJ frame, fire it up to rejectCell
+			for (int frame = cell.startFrame; frame <= cell.endFrame; frame++) {
+				if (cell.celldata.whichRejectionInFrame(frame) == CellDataR.REJECT_WHOLE_TRAJ) {
+					cell.rejectCell = CellDataR.REJECT_WHOLE_TRAJ;
+					if (params.test)
+						IJ.log("Cell #" + cell.cellNumber + " is fully rejected, between frame " + (cell.startFrame + 1)
+								+ " and frame " + (cell.endFrame + 1) + ".");
+				}
+			}
+		}
+
+	}
+
+	private void updateTrajLengthRejection() {
+		ListIterator<Cell> it = cells.listIterator();
+		while (it.hasNext()) {
+			Cell cell = it.next();
+			if (cell.rejectCell != CellDataR.REJECT_WHOLE_TRAJ) {
+				if (cell.getLastNonRejectedFrame() - cell.getFirstNonRejectedFrame() + 1 < params.minTrajLength)
+					cell.rejectCell = CellDataR.REJECT_TRAJ_LENGTH;
+				else
+					cell.rejectCell = CellDataR.NOT_REJECTED;
+			}
 		}
 	}
 
@@ -158,7 +210,6 @@ public class Results {
 		Cell previousCell = it.previous();
 		previousCell.endFrame = frameNewCell - 1;
 		previousCell.buildTrajectory();
-		updateTrajLengthRejection(previousCell);
 
 		Cell newCell = new Cell(frameNumber, it.nextIndex() + 1, previousCell.celldata, linearity, linearityPrecised,
 				params);
@@ -184,23 +235,20 @@ public class Results {
 			CellData cell = cellR.getCellData();
 			if (cell.getEndFrame() >= cell.getStartFrame()) {
 				cells.add(new Cell(frameNumber, it.previousIndex(), cellR, linearity, linearityPrecised, params));
-				cells.getLast().rejectCell = cellR.whichCellRejection();
 				for (int ij = cell.getStartFrame() - 1; ij < cell.getEndFrame(); ij++) {
 					cells.getLast().cellFrame[ij] = new CellFrame(cell, ij, cells.getLast(), rt, linearityPrecised,
 							params);
-					if (!cellR.isFrameRejected(ij)) {
-						cells.getLast().cellFrame[ij].reject = cellR.whichCellRejection();
-					} else {
-						cells.getLast().cellFrame[ij].reject = cellR.whichRejectionInFrame(ij);
-					}
+					// if (cells.getLast().cellFrame[ij].whichRejection() ==
+					// CellDataR.REJECT_WHOLE_TRAJ)
+					// cells.getLast().rejectCell = CellDataR.REJECT_WHOLE_TRAJ;
 				}
 				cells.getLast().buildTrajectory();
 			}
 		}
 	}
 
-	public Results(ArrayList<CellData> cellData, Params params, int frameNumber) {
-		this(moveToCellDataR(cellData, frameNumber), params);
+	public Results(ArrayList<CellData> cellData, int frameNumber, Params params) {
+		this(moveToCellDataR(cellData, frameNumber), params, frameNumber);
 	}
 
 	private static ArrayList<CellDataR> moveToCellDataR(ArrayList<CellData> cellData, int frameNumber) {
@@ -212,62 +260,35 @@ public class Results {
 		return output;
 	}
 
-	void initialiseStack() {
-		if (stack == null) {
-			int ik = 0;
-			for (int i = 0; i < cellData.size(); i++) {
-				while (i < cellData.size() && (cellData.get(i) == null || cellData.get(i).getCellData() == null
-						|| cellData.get(i).getCellData().getCurveMap() == null
-						|| cellData.get(i).getCellData().getCurveMap().getzVals() == null)) {
-					i++;
-				}
-				if (i < cellData.size() && ik == 0) {
-					frameNumber = cellData.get(i).getCellData().getCellRegions().length;
-					ik = i;
-				}
-			}
-			CellData cell = cellData.get(ik).getCellData();
-			stack = new ImageStack(cell.getImageWidth(), cell.getImageHeight());
-			for (int ij = 0; ij < frameNumber; ij++) {
-				stack.addSlice(new ByteProcessor(cell.getImageWidth(), cell.getImageHeight()));
-			}
-		} else {
-			frameNumber = stack.getSize();
-			int width = stack.getWidth();
-			int height = stack.getHeight();
-			stack = new ImageStack(width, height);
-			for (int i = 0; i < frameNumber; i++) {
-				stack.addSlice(new ByteProcessor(width, height));
-			}
-		}
-		imp = new ImagePlus("", stack);
-	}
-
 	private void initialiseRt(ResultsTableMt rt, boolean initial) {
 		rt.incrementCounter();
 		rt.addValue(defaultHeadings[0], 0);
+		rt.addValue(defaultHeadings[3], 0);
+		rt.addValue(defaultHeadings[1], 0);
+		rt.addValue(defaultHeadings[2], 0);
 		if (initial) {
 			CELL = rt.getColumnIndex(defaultHeadings[0]);
-			rt.addValue(defaultHeadings[1], 0);
+			COLOUR = rt.getColumnIndex(defaultHeadings[3]);
 			PROTRUSION = rt.getColumnIndex(defaultHeadings[1]);
-			rt.addValue(defaultHeadings[2], 0);
 			AREA = rt.getColumnIndex(defaultHeadings[2]);
 		}
 		rt.deleteRow(rt.getCounter() - 1);
 
 	}
 
-	public void buildProtrusions(boolean save) {
+	public void buildProtrusions(ImagePlus imp, boolean save, boolean redGreenMode) {
 		// Once buildCurveMap(allRegions, cellData.get(index)) has been done in
 		// buildOutput!
 
 		Iterator<Cell> it = cells.listIterator();
 		while (it.hasNext()) {
-			it.next().buildProtrusions(imp, save);
+			it.next().buildProtrusions(imp, save, redGreenMode);
 		}
 
 		if (save) {
 
+			if (params.twoColourAnalysis)
+				IJ.selectWindow("Visualisation - Green channel");
 			IJ.run("To ROI Manager");
 			ij.plugin.frame.RoiManager.getRoiManager().runCommand("Save",
 					params.childDir + File.separator + "stack-RoiSet.zip");
@@ -297,38 +318,61 @@ public class Results {
 			imp2.getCalibration().fps = 3;
 			Utils.saveGif(imp2, params.childDir + File.separator + "stack.gif", true);
 
-//			ij.plugin.frame.RoiManager.getRoiManager().removeAll();
-//			ij.plugin.frame.RoiManager.getRoiManager().close();
-//
-//			imp = new ImagePlus();
-//			Open_MP op = new Open_MP("" + params.childDir, imp);
-//			op.run(null);
-
 			saveTrajectories();
 
 			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_contours.csv", 3);
+			if (params.twoColourAnalysis)
+				extractAndSaveEachColourSeparately(rt, "1-Protrusion_contours", 3);
 			reduceRt();
 			rt.saveAsPrecise(params.childDir + File.separator + "1-Protrusion_center_of_mass_positions.csv", 3);
 			linearity.saveAsPrecise(params.childDir + File.separator + "2-Results.csv", 5);
 			linearityPrecised.saveAsPrecise(params.childDir + File.separator + "2-Results_per_frame.csv", 5);
+			if (params.twoColourAnalysis) {
+				extractAndSaveEachColourSeparately(rt, "1-Protrusion_center_of_mass_positions", 3);
+				extractAndSaveEachColourSeparately(rt, "2-Results", 5);
+				extractAndSaveEachColourSeparately(rt, "2-Results_per_frame", 5);
+			}
 
 			params.save();
 		}
 	}
 
+	@SuppressWarnings("deprecation")
+	private void extractAndSaveEachColourSeparately(ResultsTableMt rt, String fileName, int precision) {
+		ResultsTableMt green = new ResultsTableMt();
+		initialiseRt(green, false);
+		ResultsTableMt red = new ResultsTableMt();
+		initialiseRt(red, false);
+
+		if (rt.getCounter() <= 1)
+			return;
+		for (int row = 0; row < rt.getCounter(); row++) {
+			ResultsTableMt.addRow(rt, (rt.getValue(COLOUR, row) == CellDataR.GREEN) ? green : red, row);
+		}
+
+		green.saveAsPrecise(params.childDir + File.separator + fileName + "_green.csv", precision);
+		red.saveAsPrecise(params.childDir + File.separator + fileName + "_red.csv", precision);
+	}
+
+	public void buildProtrusions(ImagePlus imp, boolean save) {
+		buildProtrusions(imp, save, false);
+	}
+
 	private void saveTrajectories() {
 		Iterator<Cell> it = cells.listIterator();
 		ResultsTableMt traj = new ResultsTableMt();
+
 		while (it.hasNext()) {
 			Cell cell = it.next();
 			if (cell.rejectCell == CellDataR.NOT_REJECTED) {
 				int firstFrame = cell.getFirstNonRejectedFrame();
 				int lastFrame = cell.getLastNonRejectedFrame();
 				for (int frame = firstFrame; frame <= lastFrame; frame++) {
-					if (cell.cellFrame[frame].reject == CellDataR.NOT_REJECTED) {
+					if (cell.cellFrame[frame].whichRejection() == CellDataR.NOT_REJECTED) {
 						traj.incrementCounter();
 						traj.addValue(ResultsTableMt.FRAME, frame);
 						traj.addValue("Cell number", cell.cellNumber);
+						traj.addValue(defaultHeadings[3], cell.colour);
 						double[] xyCentreOfMass = cell.cellFrame[frame].getCentreOfMass();
 						traj.addValue(ResultsTableMt.X, xyCentreOfMass[0]);
 						traj.addValue(ResultsTableMt.Y, xyCentreOfMass[1]);
@@ -383,7 +427,6 @@ public class Results {
 	public void kill() {
 		cells.clear();
 		cellData.clear();
-		stack = null;
 		rt = null;
 		linearity = null;
 		linearityPrecised = null;

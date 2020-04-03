@@ -122,7 +122,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 	private int previewSlice;
 	private ImageProcessor[] previewImages;
 	private boolean selectiveOutput = false;
-	private Properties props;
+	protected Properties props;
 	private final String TRAJ_FILE_NAME = "0-Trajectories.csv"; // TODO Modified: from "trajectories.csv" to
 																// "0-Trajectories.csv"
 

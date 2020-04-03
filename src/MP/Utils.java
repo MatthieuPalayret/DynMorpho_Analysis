@@ -29,10 +29,16 @@ public class Utils {
 		if (!pol1.getBounds().intersects(pol2.getBounds()))
 			return false;
 
-		float[] x = pol1.getContainedFloatPoints().xpoints;
-		float[] y = pol1.getContainedFloatPoints().ypoints;
-		for (int pnt = 0; pnt < pol1.getContainedFloatPoints().npoints; pnt++) {
-			if (pol2.containsPoint(x[pnt], y[pnt]))
+		float[] x = pol1.getFloatPolygon().xpoints;
+		float[] y = pol1.getFloatPolygon().ypoints;
+		for (int pnt = 0; pnt < pol1.getFloatPolygon().npoints; pnt++) {
+			if (pol2.getFloatPolygon().contains(x[pnt], y[pnt]))
+				return true;
+		}
+		x = pol2.getFloatPolygon().xpoints;
+		y = pol2.getFloatPolygon().ypoints;
+		for (int pnt = 0; pnt < pol2.getFloatPolygon().npoints; pnt++) {
+			if (pol1.getFloatPolygon().contains(x[pnt], y[pnt]))
 				return true;
 		}
 		return false;

@@ -43,46 +43,52 @@ public class ParamVisualisation extends JFrame
 	 */
 	private static final long serialVersionUID = -3108969450503939630L;
 	protected Params params, paramTemp;
-	private ImagePlus image;
-	private int frame = 0;
+	protected ImagePlus image;
+	protected int frame = 0;
 
-	private static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
-	private JLabel lblParam;
-	private JLabel lblMinCurvProtrusions;
-	private JSlider sliderMinCurvProtrusions;
-	private JTextField txtMinCurvProtrusions;
-	private JLabel lblMinLengthTraj;
-	private JSlider sliderMinLengthTraj;
-	private JTextField txtMinLengthTraj;
-	private JLabel lblDramaticIncrease;
-	private JSlider sliderDramaticIncrease;
-	private JTextField txtDramaticIncrease;
-	private JLabel lblMinAreaProtrusion;
-	private JSlider sliderMinAreaProtrusion;
-	private JTextField txtMinAreaProtrusion;
-	private JLabel lblMaxProtrusionToCellSurfaceRatio;
-	private JSlider sliderMaxProtrusionToCellSurfaceRatio;
-	private JTextField txtMaxProtrusionToCellSurfaceRatio;
-	private JLabel lblSmoothingWdw;
-	private JSlider sliderSmoothingWdw;
-	private JTextField txtSmoothingWdw;
-	private JLabel lblDetectUropods;
-	private JCheckBox chckbxDetectUropods;
-	private JLabel lblInteractiveRejectionOfCells;
-	private JRadioButton rdbtnNoRejection;
-	private JRadioButton rdbtnRejectCellIn;
-	private JRadioButton rdbtnRejectAWhole;
-	private final ButtonGroup buttonGroup = new ButtonGroup();
-	private ij.gui.ImageCanvas canvas;
-	private JButton btnOk;
-	private JButton btnReset;
-	private JButton btnCancel;
+	protected static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
+	protected JLabel lblParam;
+	protected JLabel lblMinCurvProtrusions;
+	protected JSlider sliderMinCurvProtrusions;
+	protected JTextField txtMinCurvProtrusions;
+	protected JLabel lblMinLengthTraj;
+	protected JSlider sliderMinLengthTraj;
+	protected JTextField txtMinLengthTraj;
+	protected JLabel lblDramaticIncrease;
+	protected JSlider sliderDramaticIncrease;
+	protected JTextField txtDramaticIncrease;
+	protected JLabel lblMinAreaProtrusion;
+	protected JSlider sliderMinAreaProtrusion;
+	protected JTextField txtMinAreaProtrusion;
+	protected JLabel lblMaxProtrusionToCellSurfaceRatio;
+	protected JSlider sliderMaxProtrusionToCellSurfaceRatio;
+	protected JTextField txtMaxProtrusionToCellSurfaceRatio;
+	protected JLabel lblSmoothingWdw;
+	protected JSlider sliderSmoothingWdw;
+	protected JTextField txtSmoothingWdw;
+	protected JLabel lblDetectUropods;
+	protected JCheckBox chckbxDetectUropods;
+	protected JLabel lblInteractiveRejectionOfCells;
+	protected JRadioButton rdbtnNoRejection;
+	protected JRadioButton rdbtnRejectCellIn;
+	protected JRadioButton rdbtnRejectAWhole;
+	protected final ButtonGroup buttonGroup = new ButtonGroup();
+	protected ij.gui.ImageCanvas canvas;
+	protected JButton btnOk;
+	protected JButton btnReset;
+	protected JButton btnCancel;
 
 	final static int CANCEL = 1;
 	final static int FINISHED = 2;
 	final static int RUNNING = 0;
 	int finished = RUNNING;
-	private Results results;
+	protected Results results;
+
+	protected ParamVisualisation thisClass = this;
+
+	public ParamVisualisation() {
+		super("Parameter visualisation...");
+	}
 
 	public ParamVisualisation(Params params, Results results, ImageStack stack) {
 		super("Parameter visualisation...");
@@ -90,9 +96,7 @@ public class ParamVisualisation extends JFrame
 		this.params = params;
 		paramTemp = params.clone();
 		this.results = results;
-		results.stack = stack;
-		image = new ImagePlus("Visualisation", results.stack);
-		results.imp = image;
+		image = new ImagePlus("Visualisation", stack);
 		image = new ImagePlus("Visualisation", GenUtils.convertStack(image, 32).getImageStack());
 		frame = image.getCurrentSlice() - 1;
 
@@ -115,6 +119,64 @@ public class ParamVisualisation extends JFrame
 
 		addKeyListener(this);
 
+		setMainFeatures();
+
+		lblInteractiveRejectionOfCells = new JLabel("Interactive rejection of cells:");
+		lblInteractiveRejectionOfCells.setFont(font);
+		GridBagConstraints gbc_lblInteractiveRejectionOfCells = new GridBagConstraints();
+		gbc_lblInteractiveRejectionOfCells.gridwidth = 3;
+		gbc_lblInteractiveRejectionOfCells.insets = new Insets(0, 0, 5, 5);
+		gbc_lblInteractiveRejectionOfCells.gridx = 1;
+		gbc_lblInteractiveRejectionOfCells.gridy = 10;
+		getContentPane().add(lblInteractiveRejectionOfCells, gbc_lblInteractiveRejectionOfCells);
+
+		rdbtnNoRejection = new JRadioButton("No rejection");
+		buttonGroup.add(rdbtnNoRejection);
+		GridBagConstraints gbc_rdbtnNoRejection = new GridBagConstraints();
+		gbc_rdbtnNoRejection.gridwidth = 2;
+		gbc_rdbtnNoRejection.anchor = GridBagConstraints.WEST;
+		gbc_rdbtnNoRejection.insets = new Insets(0, 0, 5, 5);
+		gbc_rdbtnNoRejection.gridx = 1;
+		gbc_rdbtnNoRejection.gridy = 11;
+		if (!paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
+			rdbtnNoRejection.setSelected(true);
+		rdbtnNoRejection.addActionListener(this);
+		getContentPane().add(rdbtnNoRejection, gbc_rdbtnNoRejection);
+
+		rdbtnRejectCellIn = new JRadioButton("Reject cell in a single frame?");
+		buttonGroup.add(rdbtnRejectCellIn);
+		GridBagConstraints gbc_rdbtnRejectCellIn = new GridBagConstraints();
+		gbc_rdbtnRejectCellIn.gridwidth = 2;
+		gbc_rdbtnRejectCellIn.anchor = GridBagConstraints.WEST;
+		gbc_rdbtnRejectCellIn.insets = new Insets(0, 0, 5, 5);
+		gbc_rdbtnRejectCellIn.gridx = 1;
+		gbc_rdbtnRejectCellIn.gridy = 12;
+		if (paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
+			rdbtnRejectCellIn.setSelected(true);
+		rdbtnRejectCellIn.addActionListener(this);
+		getContentPane().add(rdbtnRejectCellIn, gbc_rdbtnRejectCellIn);
+
+		rdbtnRejectAWhole = new JRadioButton("Reject a whole cell trajectory?");
+		buttonGroup.add(rdbtnRejectAWhole);
+		GridBagConstraints gbc_rdbtnRejectAWhole = new GridBagConstraints();
+		gbc_rdbtnRejectAWhole.gridwidth = 2;
+		gbc_rdbtnRejectAWhole.anchor = GridBagConstraints.WEST;
+		gbc_rdbtnRejectAWhole.insets = new Insets(0, 0, 5, 5);
+		gbc_rdbtnRejectAWhole.gridx = 1;
+		gbc_rdbtnRejectAWhole.gridy = 13;
+		if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
+			rdbtnRejectAWhole.setSelected(true);
+		rdbtnRejectAWhole.addActionListener(this);
+		getContentPane().add(rdbtnRejectAWhole, gbc_rdbtnRejectAWhole);
+
+		setFinalButtons(14);
+
+		updateImage();
+
+		this.setVisible(true);
+	}
+
+	public void setMainFeatures() {
 		lblParam = new JLabel("Parameters:");
 		lblParam.setFont(font);
 		GridBagConstraints gbc_lblParam = new GridBagConstraints();
@@ -328,61 +390,15 @@ public class ParamVisualisation extends JFrame
 		gbc_chckbxDetectUropods.gridy = 8;
 		chckbxDetectUropods.addActionListener(this);
 		getContentPane().add(chckbxDetectUropods, gbc_chckbxDetectUropods);
+	}
 
-		lblInteractiveRejectionOfCells = new JLabel("Interactive rejection of cells:");
-		lblInteractiveRejectionOfCells.setFont(font);
-		GridBagConstraints gbc_lblInteractiveRejectionOfCells = new GridBagConstraints();
-		gbc_lblInteractiveRejectionOfCells.gridwidth = 3;
-		gbc_lblInteractiveRejectionOfCells.insets = new Insets(0, 0, 5, 5);
-		gbc_lblInteractiveRejectionOfCells.gridx = 1;
-		gbc_lblInteractiveRejectionOfCells.gridy = 10;
-		getContentPane().add(lblInteractiveRejectionOfCells, gbc_lblInteractiveRejectionOfCells);
-
-		rdbtnNoRejection = new JRadioButton("No rejection");
-		buttonGroup.add(rdbtnNoRejection);
-		GridBagConstraints gbc_rdbtnNoRejection = new GridBagConstraints();
-		gbc_rdbtnNoRejection.gridwidth = 2;
-		gbc_rdbtnNoRejection.anchor = GridBagConstraints.WEST;
-		gbc_rdbtnNoRejection.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnNoRejection.gridx = 1;
-		gbc_rdbtnNoRejection.gridy = 11;
-		if (!paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
-			rdbtnNoRejection.setSelected(true);
-		rdbtnNoRejection.addActionListener(this);
-		getContentPane().add(rdbtnNoRejection, gbc_rdbtnNoRejection);
-
-		rdbtnRejectCellIn = new JRadioButton("Reject cell in a single frame?");
-		buttonGroup.add(rdbtnRejectCellIn);
-		GridBagConstraints gbc_rdbtnRejectCellIn = new GridBagConstraints();
-		gbc_rdbtnRejectCellIn.gridwidth = 2;
-		gbc_rdbtnRejectCellIn.anchor = GridBagConstraints.WEST;
-		gbc_rdbtnRejectCellIn.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnRejectCellIn.gridx = 1;
-		gbc_rdbtnRejectCellIn.gridy = 12;
-		if (paramTemp.postRejectCellFrame && !paramTemp.postRejectWholeCell)
-			rdbtnRejectCellIn.setSelected(true);
-		rdbtnRejectCellIn.addActionListener(this);
-		getContentPane().add(rdbtnRejectCellIn, gbc_rdbtnRejectCellIn);
-
-		rdbtnRejectAWhole = new JRadioButton("Reject a whole cell trajectory?");
-		buttonGroup.add(rdbtnRejectAWhole);
-		GridBagConstraints gbc_rdbtnRejectAWhole = new GridBagConstraints();
-		gbc_rdbtnRejectAWhole.gridwidth = 2;
-		gbc_rdbtnRejectAWhole.anchor = GridBagConstraints.WEST;
-		gbc_rdbtnRejectAWhole.insets = new Insets(0, 0, 5, 5);
-		gbc_rdbtnRejectAWhole.gridx = 1;
-		gbc_rdbtnRejectAWhole.gridy = 13;
-		if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
-			rdbtnRejectAWhole.setSelected(true);
-		rdbtnRejectAWhole.addActionListener(this);
-		getContentPane().add(rdbtnRejectAWhole, gbc_rdbtnRejectAWhole);
-
+	public void setFinalButtons(int line) {
 		btnOk = new JButton("OK");
 		btnOk.setFont(font);
 		GridBagConstraints gbc_btnOk = new GridBagConstraints();
 		gbc_btnOk.insets = new Insets(0, 0, 0, 5);
 		gbc_btnOk.gridx = 1;
-		gbc_btnOk.gridy = 14;
+		gbc_btnOk.gridy = line;
 		btnOk.addActionListener(this);
 		getContentPane().add(btnOk, gbc_btnOk);
 
@@ -391,7 +407,7 @@ public class ParamVisualisation extends JFrame
 		GridBagConstraints gbc_btnReset = new GridBagConstraints();
 		gbc_btnReset.insets = new Insets(0, 0, 0, 5);
 		gbc_btnReset.gridx = 2;
-		gbc_btnReset.gridy = 14;
+		gbc_btnReset.gridy = line;
 		btnReset.addActionListener(this);
 		getContentPane().add(btnReset, gbc_btnReset);
 
@@ -400,13 +416,9 @@ public class ParamVisualisation extends JFrame
 		GridBagConstraints gbc_btnCancel = new GridBagConstraints();
 		gbc_btnCancel.insets = new Insets(0, 0, 0, 5);
 		gbc_btnCancel.gridx = 3;
-		gbc_btnCancel.gridy = 14;
+		gbc_btnCancel.gridy = line;
 		btnCancel.addActionListener(this);
 		getContentPane().add(btnCancel, gbc_btnCancel);
-
-		updateImage();
-
-		this.setVisible(true);
 	}
 
 	public void run() {
@@ -415,16 +427,15 @@ public class ParamVisualisation extends JFrame
 		}
 	}
 
-	private void cancelAllRejections() {
+	protected void cancelAllRejections() {
 		for (int i = 0; i < results.cellData.size(); i++) {
 			CellDataR cell = results.cellData.get(i);
-			cell.rejectCell(CellDataR.NOT_REJECTED);
 			for (int j = 0; j < cell.getFrameNumber(); j++)
 				cell.rejectFrame(j, CellDataR.NOT_REJECTED);
 		}
 	}
 
-	private void disposeThis() {
+	protected void disposeThis() {
 		this.setVisible(false);
 		this.removeKeyListener(this);
 		sliderMinCurvProtrusions.removeChangeListener(this);
@@ -470,7 +481,7 @@ public class ParamVisualisation extends JFrame
 		return imageLock = true;
 	}
 
-	private void updateImage() {
+	protected void updateImage() {
 		if (aquireImageLock()) {
 			// Run in a new thread to allow the GUI to continue updating
 			new Thread(new Runnable() {
@@ -483,7 +494,7 @@ public class ParamVisualisation extends JFrame
 							// Store the parameters to be processed
 							Params paramtemp = paramTemp.clone();
 							// Do something with parameters
-							updateAnalysis(paramtemp, true);
+							updateAnalysis(paramtemp, true, results, image);
 							// Check if the parameters have changed again
 							parametersChanged = !paramtemp.compare(paramTemp);
 						}
@@ -496,8 +507,9 @@ public class ParamVisualisation extends JFrame
 		}
 	}
 
-	private void updateAnalysis(Params paramTemp, boolean previsualisation) {
-		results = new Results(results.cellData, paramTemp);
+	protected static Results updateAnalysis(Params paramTemp, boolean previsualisation, Results results,
+			ImagePlus image, boolean redGreenMode) {
+		results = new Results(results.cellData, paramTemp, image.getImageStackSize());
 		if (image.getOverlay() == null) {
 			image.setOverlay(new Overlay());
 			image.getOverlay().drawLabels(true);
@@ -508,10 +520,14 @@ public class ParamVisualisation extends JFrame
 			image.getOverlay().setLabelFont(new Font("SansSerif", Font.BOLD, 18), false);
 		} else
 			image.getOverlay().clear();
-		results.imp = image;
-		results.stack = image.getStack();
-		results.buildProtrusions(!previsualisation);
+		results.buildProtrusions(image, !previsualisation, redGreenMode);
 		image.setHideOverlay(false);
+		return results;
+	}
+
+	protected static Results updateAnalysis(Params paramTemp, boolean previsualisation, Results results,
+			ImagePlus image) {
+		return updateAnalysis(paramTemp, previsualisation, results, image, false);
 	}
 
 	@Override
@@ -526,13 +542,13 @@ public class ParamVisualisation extends JFrame
 				if (cellD.getStartFrame() - 1 <= frame && frame <= cellD.getEndFrame() - 1
 						&& cellD.getCellRegions()[frame].getPolygonRoi(cellD.getCellRegions()[frame].getMask())
 								.contains(x, y)) {
-					int cellNumber = findCellNumber(frame, x, y);
+					int cellNumber = findCellNumber(frame, x, y, results);
 					if (paramTemp.postRejectWholeCell) {
 						if (results.cells.get(cellNumber).rejectCell == CellDataR.REJECT_WHOLE_TRAJ) {
 							IJ.log("Addition of cell #" + cellNumber + " for all frames.");
 							cell.stopWholeCellRejection(frame);
-						} else if (results.cells.get(cellNumber).rejectCell == CellDataR.NOT_REJECTED
-								&& results.cells.get(cellNumber).cellFrame[frame].reject == CellDataR.NOT_REJECTED) {
+						} else if (results.cells.get(cellNumber).cellFrame[frame]
+								.whichRejection() == CellDataR.NOT_REJECTED) {
 							IJ.log("Suppression of cell #" + cellNumber + " for all frames.");
 							cell.rejectFrame(frame, CellDataR.REJECT_WHOLE_TRAJ);
 						} else {
@@ -558,12 +574,12 @@ public class ParamVisualisation extends JFrame
 					}
 				}
 			}
-			updateAnalysis(paramTemp.clone(), true);
+			updateAnalysis(paramTemp.clone(), true, results, image);
 		}
 
 	}
 
-	private int findCellNumber(int frame, int x, int y) {
+	protected int findCellNumber(int frame, int x, int y, Results results) {
 		for (int i = 0; i < results.cells.size(); i++) {
 			Cell cell = results.cells.get(i);
 			if (cell.startFrame <= frame && frame <= cell.endFrame && cell.cellFrame[frame].contains(x, y)) {
@@ -606,10 +622,11 @@ public class ParamVisualisation extends JFrame
 			frame = Math.max(frame - 1, 0);
 		} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 			btnOk.setSelected(true);
+			thisClass.updateImage();
 		} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			btnCancel.setSelected(true);
+			thisClass.updateImage();
 		}
-		updateImage();
 	}
 
 	@Override
@@ -623,7 +640,7 @@ public class ParamVisualisation extends JFrame
 	@Override
 	public void focusLost(FocusEvent e) {
 		Object source = e.getSource();
-		somethingHappened(source);
+		thisClass.somethingHappened(source);
 	}
 
 	@Override
@@ -633,31 +650,31 @@ public class ParamVisualisation extends JFrame
 			if (source == sliderMinCurvProtrusions) {
 				paramTemp.curvatureMinLevel = -sliderMinCurvProtrusions.getValue();
 				txtMinCurvProtrusions.setText(IJ.d2s(-paramTemp.curvatureMinLevel, 0));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderMinLengthTraj) {
 				int temp = sliderMinLengthTraj.getValue();
 				paramTemp.minTrajLength = temp;
 				txtMinLengthTraj.setText(IJ.d2s(temp * paramTemp.frameLengthS, 3));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderDramaticIncrease) {
 				paramTemp.dramaticAreaIncrease = sliderDramaticIncrease.getValue();
 				txtDramaticIncrease.setText(IJ.d2s(paramTemp.dramaticAreaIncrease, 0));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderMinAreaProtrusion) {
 				double temp = sliderMinAreaProtrusion.getValue() / 10.0;
 				paramTemp.minAreaDetection = temp / paramTemp.getPixelSizeUmSquared();
 				txtMinAreaProtrusion.setText(IJ.d2s(temp, 1));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderMaxProtrusionToCellSurfaceRatio) {
 				double temp = sliderMaxProtrusionToCellSurfaceRatio.getValue();
 				paramTemp.maxProtrusionToCellAreaRatio = temp / 100.0D;
 				txtMaxProtrusionToCellSurfaceRatio.setText(IJ.d2s(temp, 0));
-				updateImage();
+				thisClass.updateImage();
 			} else if (source == sliderSmoothingWdw) {
 				double temp = sliderSmoothingWdw.getValue();
 				paramTemp.smoothingCoeffInPixels = (int) temp;
 				txtSmoothingWdw.setText(IJ.d2s(temp, 0));
-				updateImage();
+				thisClass.updateImage();
 			}
 		}
 	}
@@ -665,54 +682,54 @@ public class ParamVisualisation extends JFrame
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		Object source = e.getSource();
-		somethingHappened(source);
+		thisClass.somethingHappened(source);
 	}
 
-	private boolean sliderMoveAllowed = true;
+	protected boolean sliderMoveAllowed = true;
 
-	private void somethingHappened(Object source) {
+	protected void somethingHappened(Object source) {
 		if (source == txtMinCurvProtrusions) {
 			paramTemp.curvatureMinLevel = -Double.parseDouble(txtMinCurvProtrusions.getText());
 			sliderMoveAllowed = false;
 			sliderMinCurvProtrusions.setValue((int) (-paramTemp.curvatureMinLevel));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == txtMinLengthTraj) {
 			double temp = Double.parseDouble(txtMinLengthTraj.getText());
 			paramTemp.minTrajLength = (int) (temp / paramTemp.frameLengthS);
 			sliderMoveAllowed = false;
 			sliderMinLengthTraj.setValue(paramTemp.minTrajLength);
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == txtDramaticIncrease) {
 			paramTemp.dramaticAreaIncrease = Double.parseDouble(txtDramaticIncrease.getText());
 			sliderMoveAllowed = false;
 			sliderDramaticIncrease.setValue((int) (paramTemp.dramaticAreaIncrease));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == txtMinAreaProtrusion) {
 			double temp = Double.parseDouble(txtMinAreaProtrusion.getText());
 			paramTemp.minAreaDetection = temp / paramTemp.getPixelSizeUmSquared();
 			sliderMoveAllowed = false;
 			sliderMinAreaProtrusion.setValue((int) (temp * 10.0));
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == txtMaxProtrusionToCellSurfaceRatio) {
 			double temp = Double.parseDouble(txtMaxProtrusionToCellSurfaceRatio.getText());
 			paramTemp.maxProtrusionToCellAreaRatio = temp / 100.0D;
 			sliderMoveAllowed = false;
 			sliderMaxProtrusionToCellSurfaceRatio.setValue((int) temp);
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == txtSmoothingWdw) {
 			paramTemp.smoothingCoeffInPixels = (int) Double.parseDouble(txtSmoothingWdw.getText());
 			sliderMoveAllowed = false;
 			sliderSmoothingWdw.setValue(paramTemp.smoothingCoeffInPixels);
-			updateImage();
+			thisClass.updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == chckbxDetectUropods) {
 			paramTemp.detectUropod = chckbxDetectUropods.isSelected();
-			updateImage();
+			thisClass.updateImage();
 		} else if (source == rdbtnNoRejection) {
 			if (rdbtnNoRejection.isSelected()) {
 				paramTemp.postRejectCellFrame = false;
@@ -729,7 +746,7 @@ public class ParamVisualisation extends JFrame
 				paramTemp.postRejectWholeCell = true;
 			}
 		} else if (source == btnOk) {
-			updateAnalysis(paramTemp, false);
+			updateAnalysis(paramTemp, false, results, image);
 			params = paramTemp;
 			disposeThis();
 			RoiManager.getInstance().setVisible(false);
@@ -766,7 +783,7 @@ public class ParamVisualisation extends JFrame
 			else if (!paramTemp.postRejectCellFrame && paramTemp.postRejectWholeCell)
 				rdbtnRejectAWhole.setSelected(true);
 			cancelAllRejections();
-			updateImage();
+			thisClass.updateImage();
 		} else if (source == btnCancel) {
 			cancelAllRejections();
 			disposeThis();
@@ -785,11 +802,11 @@ public class ParamVisualisation extends JFrame
 	public void imageOpened(ImagePlus arg0) {
 	}
 
-	@Override
+	@Override // TODO Is this necessary?
 	public void imageUpdated(ImagePlus imp) {
 		if (imp == image) {
 			frame = image.getCurrentSlice() - 1;
-			updateImage();
+			thisClass.updateImage();
 		}
 	}
 

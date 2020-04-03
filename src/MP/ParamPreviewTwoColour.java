@@ -41,6 +41,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 
 	public ParamPreviewTwoColour(Params params, ImagePlus img) {
 		super("Parameter preview...");
+		thisClass = this;
 
 		this.params = params;
 		params.twoColourAnalysis = true;
@@ -49,12 +50,14 @@ public class ParamPreviewTwoColour extends ParamPreview {
 
 		img.setC(channel1);
 		ImagePlus impTemp1 = new Duplicator().run(img, channel1, channel1, 1, 1, 1, img.getNFrames());
+		IJ.resetMinAndMax(impTemp1);
 		stack8bit = GenUtils.convertStack(impTemp1.getImageStack(), 8);
-		image = new ImagePlus("Previsualisation - Red channel", GenUtils.convertStack(impTemp1, 32).getImageStack());
+		image = new ImagePlus("Previsualisation-Red_channel", GenUtils.convertStack(impTemp1, 32).getImageStack());
 		frame = image.getCurrentSlice() - 1;
 		ImagePlus impTemp2 = new Duplicator().run(img, channel2, channel2, 1, 1, 1, img.getNFrames());
+		IJ.resetMinAndMax(impTemp2);
 		stack8bit2 = GenUtils.convertStack(impTemp2.getImageStack(), 8);
-		image2 = new ImagePlus("Previsualisation - Green channel", GenUtils.convertStack(impTemp2, 32).getImageStack());
+		image2 = new ImagePlus("Previsualisation-Green_channel", GenUtils.convertStack(impTemp2, 32).getImageStack());
 		image2.setSlice(frame + 1);
 
 		image.updateAndDraw();
@@ -191,7 +194,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 		comboboxChannel2.addActionListener(this);
 		getContentPane().add(comboboxChannel2, gbc_comboboxChannel2);
 
-		lblContourIntensityThreshold = new JLabel("Contour intensity threshold (photon counts):");
+		lblContourIntensityThreshold = new JLabel("Contour intensity threshold (in photons):");
 		lblContourIntensityThreshold.setFont(font);
 		GridBagConstraints gbc_lblContourIntensityThreshold = new GridBagConstraints();
 		gbc_lblContourIntensityThreshold.anchor = GridBagConstraints.EAST;
@@ -423,6 +426,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 				stack8bit = GenUtils.convertStack(impTemp.getImageStack(), 8);
 				image.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
 				IJ.resetMinAndMax(image);
+				paramTemp.channel1 = channel1;
 				updateImage();
 			}
 		} else if (source == comboboxChannel2) {
@@ -433,6 +437,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 				stack8bit2 = GenUtils.convertStack(impTemp.getImageStack(), 8);
 				image2.setStack(GenUtils.convertStack(impTemp, 32).getImageStack());
 				IJ.resetMinAndMax(image2);
+				paramTemp.channel2 = channel2;
 				updateImage();
 			}
 		} else if (source == lblContourIntensityThreshold_2) {
@@ -441,6 +446,17 @@ public class ParamPreviewTwoColour extends ParamPreview {
 			sliderContourIntensityThreshold2.setValue(paramTemp.greyThreshold2);
 			updateImage();
 			sliderMoveAllowed = true;
+		} else if (source == btnOk) {
+			image2.close();
+			super.somethingHappened(source);
+		} else if (source == btnReset) {
+			paramTemp = new Params();
+			sliderContourIntensityThreshold2.setValue(paramTemp.greyThreshold2);
+			lblContourIntensityThreshold_2.setText(IJ.d2s(sliderContourIntensityThreshold2.getValue(), 0));
+			super.somethingHappened(source);
+		} else if (source == btnCancel) {
+			image2.close();
+			super.somethingHappened(source);
 		} else {
 			super.somethingHappened(source);
 		}
