@@ -42,20 +42,27 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 			tempFinalAddedSlice = true;
 		}
 
-		if (imp.getOriginalFileInfo().directory == "") {
-			Utils.saveTiff(imp, IJ.getFilePath("Choose a place to save this image:"), false);
-		} else {
-			String initPath = imp.getOriginalFileInfo().directory + File.separator + imp.getOriginalFileInfo().fileName;
-			if (imp.getStack().isVirtual()) {
-				new Opener().open(initPath);
-				imp.close();
-				imp = IJ.getImage();
+		if (!(imp == null || imp.getOriginalFileInfo() == null)) {
+			if (imp.getOriginalFileInfo().directory == "") {
+				Utils.saveTiff(imp, IJ.getFilePath("Choose a place to save this image:"), false);
+			} else {
+				String initPath = imp.getOriginalFileInfo().directory + File.separator
+						+ imp.getOriginalFileInfo().fileName;
+				if (imp.getStack().isVirtual()) {
+					new Opener().open(initPath);
+					imp.close();
+					imp = IJ.getImage();
+				}
 			}
 		}
 
 		params = new Params();
 		params.finalAddedSlice = tempFinalAddedSlice;
 		uv = params.getUV();
+	}
+
+	Analyse_Protrusion_MP(String str) {
+		super();
 	}
 
 	@Override

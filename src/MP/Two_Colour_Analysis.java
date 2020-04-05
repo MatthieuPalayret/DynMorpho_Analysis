@@ -2,6 +2,7 @@ package MP;
 
 import java.io.File;
 
+import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.Duplicator;
@@ -9,14 +10,32 @@ import ij.plugin.Duplicator;
 public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 
 	public Two_Colour_Analysis() {
-		super();
+		super("");
+		IJ.log("Plugin: MP v." + Params.version);
+		imp = IJ.getImage();
+
+		params = new Params();
+		uv = params.getUV();
 		params.twoColourAnalysis = true;
+		directory = new File(imp.getOriginalFileInfo().directory);
+
+		// Do a z-stack projection
+		IJ.run("Z Project...", "projection=[Max Intensity] all");
+		imp.close();
+		imp.flush();
+		imp = IJ.getImage();
+		imp.setTitle(directory.getName());
+		parDir = new File(GenUtils.openResultsDirectory(directory + delimiter + directory.getName()));
+		parDir.mkdir();
+
+		// Save the file
+		// new File(directory + File.separator + directory.getName()).mkdir();
+		Utils.saveTiff(imp, parDir + File.separator + directory.getName() + ".tiff", false);
 	}
 
 	@Override
 	public void run(String subClass) {
 		IJ.resetMinAndMax(imp);
-		directory = new File(imp.getOriginalFileInfo().directory);
 
 		IJ.log("Choose parameters to determine the cell contours... Legend:");
 		IJ.log("- Blue: selected cell contours.");
