@@ -8,7 +8,7 @@ import ij.ImagePlus;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.476;
+	public static final double version = 1.483;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()

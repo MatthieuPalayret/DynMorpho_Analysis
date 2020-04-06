@@ -465,6 +465,7 @@ public class ParamPreviewTwoColour extends ParamPreview {
 			updateImage();
 			sliderMoveAllowed = true;
 		} else if (source == btnOk) {
+			ImagePlus.removeImageListener(this);
 			image2.close();
 			super.somethingHappened(source);
 		} else if (source == btnReset) {

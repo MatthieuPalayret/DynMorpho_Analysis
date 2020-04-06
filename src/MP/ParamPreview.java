@@ -441,7 +441,8 @@ public class ParamPreview extends JFrame
 			sliderMoveAllowed = true;
 		} else if (source == btnOk) {
 			params = paramTemp;
-			ImagePlus.removeImageListener(this);
+			if (!params.twoColourAnalysis)
+				ImagePlus.removeImageListener(this);
 			image.close();
 			imageIni.show();
 			disposeThis();

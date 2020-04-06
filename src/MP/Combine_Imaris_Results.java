@@ -31,6 +31,10 @@ public class Combine_Imaris_Results extends Combine_Results {
 		super("Imaris file", JFileChooser.FILES_ONLY);
 	}
 
+	public Combine_Imaris_Results(String title) {
+		super(title, JFileChooser.FILES_ONLY);
+	}
+
 	/**
 	 * 
 	 */
@@ -101,7 +105,7 @@ public class Combine_Imaris_Results extends Combine_Results {
 		writeAndCloseExcelHolder(holder);
 	}
 
-	private ExcelHolder newExcelHolder(String filePath, String sheetName) {
+	protected ExcelHolder newExcelHolder(String filePath, String sheetName) {
 		// Open the Excel file and the proper sheet
 		ExcelHolder holder = null;
 		try {
@@ -116,13 +120,13 @@ public class Combine_Imaris_Results extends Combine_Results {
 		return holder;
 	}
 
-	private Sheet openExcelSheet(ExcelHolder holder, String sheetName) {
+	protected Sheet openExcelSheet(ExcelHolder holder, String sheetName) {
 		Workbook wb = holder.wb;
 		// Get sheet in workbook. See method for details.
 		return openSheetInWorkbook(wb, sheetName);
 	}
 
-	private void closeExcelHolder(ExcelHolder holder) {
+	protected void closeExcelHolder(ExcelHolder holder) {
 		// Close the Excel file
 		try {
 			holder.closeWorkbook();
@@ -131,7 +135,7 @@ public class Combine_Imaris_Results extends Combine_Results {
 		}
 	}
 
-	private void writeAndCloseExcelHolder(ExcelHolder holder) {
+	protected void writeAndCloseExcelHolder(ExcelHolder holder) {
 		// Close the Excel file
 		try {
 			holder.writeOutAndCloseWorkbook();
@@ -140,7 +144,7 @@ public class Combine_Imaris_Results extends Combine_Results {
 		}
 	}
 
-	private String getFileNameFromPath(String filePath) {
+	protected String getFileNameFromPath(String filePath) {
 		if (filePath == null)
 			return null;
 		return filePath.substring(filePath.lastIndexOf(File.separatorChar) + 1);
@@ -263,9 +267,9 @@ public class Combine_Imaris_Results extends Combine_Results {
 		}
 	}
 
-	private static class ExcelHolder {
-		private File excelFile;
-		private FileInputStream fileIn;
+	protected static class ExcelHolder {
+		protected File excelFile;
+		protected FileInputStream fileIn;
 		Workbook wb;
 
 		public ExcelHolder(String filePath) {

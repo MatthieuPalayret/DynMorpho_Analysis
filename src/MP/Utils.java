@@ -1,5 +1,6 @@
 package MP;
 
+import java.awt.Color;
 import java.awt.Polygon;
 import java.io.File;
 
@@ -345,6 +346,26 @@ public class Utils {
 			return files;
 		} else
 			return null;
+	}
+
+	public static Color getGradientColor(Color ini, Color fin, int numberOfSteps, int step) {
+		if (numberOfSteps == 0)
+			return ini;
+		if (step % numberOfSteps == 0)
+			return ini;
+		if (step % numberOfSteps == numberOfSteps - 1)
+			return fin;
+		else {
+			float[] hsbini = Color.RGBtoHSB(ini.getRed(), ini.getGreen(), ini.getBlue(), null);
+			float[] hsbfin = Color.RGBtoHSB(fin.getRed(), fin.getGreen(), fin.getBlue(), null);
+			float h = ((numberOfSteps - step % numberOfSteps) * hsbini[0] + (step % numberOfSteps) * hsbfin[0])
+					/ numberOfSteps;
+			float s = ((numberOfSteps - step % numberOfSteps) * hsbini[1] + (step % numberOfSteps) * hsbfin[1])
+					/ numberOfSteps;
+			float b = ((numberOfSteps - step % numberOfSteps) * hsbini[2] + (step % numberOfSteps) * hsbfin[2])
+					/ numberOfSteps;
+			return Color.getHSBColor(h, s, b);
+		}
 	}
 
 }
