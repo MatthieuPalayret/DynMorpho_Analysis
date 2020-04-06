@@ -2,6 +2,8 @@ package MP;
 
 import java.io.File;
 
+import javax.swing.JFileChooser;
+
 import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
@@ -25,12 +27,28 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 		imp.flush();
 		imp = IJ.getImage();
 		imp.setTitle(directory.getName());
-		parDir = new File(GenUtils.openResultsDirectory(directory + delimiter + directory.getName()));
+
+		// Ask where to save the files
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		chooser.setDialogTitle("Select the directory where the result folder will be created:");
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setCurrentDirectory(directory);
+
+		int returnVal = chooser.showOpenDialog(null);
+		File pathTemp = null;
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			pathTemp = chooser.getSelectedFile();
+		} else
+			pathTemp = directory;
+
+		parDir = new File(GenUtils.openResultsDirectory(pathTemp + File.separator + directory.getName()));
 		parDir.mkdir();
 
 		// Save the file
 		// new File(directory + File.separator + directory.getName()).mkdir();
-		Utils.saveTiff(imp, parDir + File.separator + directory.getName() + ".tiff", false);
+		if (params.test)
+			Utils.saveTiff(imp, parDir + File.separator + directory.getName() + ".tiff", false);
 	}
 
 	@Override
