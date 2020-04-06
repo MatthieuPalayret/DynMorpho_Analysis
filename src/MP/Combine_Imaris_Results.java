@@ -31,8 +31,8 @@ public class Combine_Imaris_Results extends Combine_Results {
 		super("Imaris file", JFileChooser.FILES_ONLY);
 	}
 
-	public Combine_Imaris_Results(String title) {
-		super(title, JFileChooser.FILES_ONLY);
+	public Combine_Imaris_Results(String title, int fileChooserType) {
+		super(title, fileChooserType);
 	}
 
 	/**

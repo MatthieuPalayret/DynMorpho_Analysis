@@ -41,6 +41,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	private static final Font font = new Font("Segoe UI", Font.PLAIN, 13);
 	String fileType = "folder";
 	int fileChooserType = JFileChooser.DIRECTORIES_ONLY;
+	File currentDirectory = null;
 
 	public Combine_Results() {
 		super("Combine results...");
@@ -146,6 +147,8 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 			chooser.setFileSelectionMode(fileChooserType);
 			chooser.setDialogTitle("Select " + fileType + "s to be combined:");
 			chooser.setMultiSelectionEnabled(true);
+			if (currentDirectory != null)
+				chooser.setCurrentDirectory(currentDirectory);
 
 			int returnVal = chooser.showOpenDialog(null);
 			if (returnVal == JFileChooser.APPROVE_OPTION) {
@@ -155,6 +158,8 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 						listmodel.addElement(path);
 				}
 			}
+
+			currentDirectory = chooser.getCurrentDirectory();
 		} else if (source == btnDeleteFolders) {
 			int[] index = list.getSelectedIndices();
 			if (index == null) {

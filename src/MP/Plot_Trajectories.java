@@ -1,12 +1,15 @@
 package MP;
 
 import java.awt.Color;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+
+import javax.swing.JFileChooser;
 
 import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -26,9 +29,10 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 	private Plot plot = new Plot("Trajectories", "x (" + IJ.micronSymbol + "m)", "y (" + IJ.micronSymbol + "m)");
 	private int plotNumber = 0;
 	private double[][] MaxMinXY = new double[2][2];
+	private boolean fixedRange = true;
 
 	public Plot_Trajectories() {
-		super("Imaris or analysed file");
+		super("Imaris or analysed file", JFileChooser.FILES_AND_DIRECTORIES);
 	}
 
 	@Override
@@ -46,10 +50,18 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 			String pathFile = resultList.get(i);
 			IJ.log("Reading file: " + pathFile);
 
-			if (pathFile.endsWith(".csv")) {
+			if (new File(pathFile).isDirectory()) {
+				String pathTemp = pathFile + File.separator + "0-Trajectories.csv";
+				if (new File(pathTemp).isFile()) {
+					ResultsTableMt rtTemp = ResultsTableMt.open2(pathTemp);
+					addRtFromAnalysedFileToPlot(rtTemp);
+				} else {
+					IJ.log(pathFile + " does not countain any 0-Trajectories.csv file to analyse. It is thus ignred.");
+				}
+			} else if (pathFile.endsWith(".csv")) {
 				ResultsTableMt rtTemp = ResultsTableMt.open2(pathFile);
 				addRtFromAnalysedFileToPlot(rtTemp);
-			} else {
+			} else if (pathFile.endsWith(".xls")) {
 				try {
 					ExcelHolder holder = new ExcelHolder(pathFile);
 					if (holder.excelFile.exists()) {
@@ -71,17 +83,20 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
-			}
+			} else
+				IJ.log(pathFile + " is not a correct file. It is thus ignored.");
 		}
 
-		// double margin = 10;
-		// plot.setLimits(MaxMinXY[1][0] - margin, MaxMinXY[0][0] + margin,
-		// MaxMinXY[1][1] - margin,
-		// MaxMinXY[0][1] + margin);
 		plot.setSize(512, 512);
 		plot.setFormatFlags(Plot.X_TICKS + Plot.X_MINOR_TICKS + Plot.X_NUMBERS + Plot.Y_TICKS + Plot.Y_MINOR_TICKS
 				+ Plot.Y_NUMBERS);
-		plot.setLimits(-200, 200, -200, 200);
+		if (fixedRange) {
+			plot.setLimits(-200, 200, -200, 200);
+		} else {
+			double margin = 10;
+			plot.setLimits(MaxMinXY[1][0] - margin, MaxMinXY[0][0] + margin, MaxMinXY[1][1] - margin,
+					MaxMinXY[0][1] + margin);
+		}
 		plot.show();
 		IJ.log("" + plotNumber + " trajectories plotted.");
 	}
@@ -143,12 +158,14 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 		double[] y = Utils.minus(yvalues, yvalues[0]);
 		double[] temp = Utils.maxMin(x);
 
-		// Update MaxMin for the plot dimensions
-		MaxMinXY[0][0] = Math.max(temp[0], MaxMinXY[0][0]);
-		MaxMinXY[1][0] = Math.min(temp[1], MaxMinXY[1][0]);
-		temp = Utils.maxMin(y);
-		MaxMinXY[0][1] = Math.max(temp[0], MaxMinXY[0][1]);
-		MaxMinXY[1][1] = Math.min(temp[1], MaxMinXY[1][1]);
+		if (!fixedRange) {
+			// Update MaxMin for the plot dimensions
+			MaxMinXY[0][0] = Math.max(temp[0], MaxMinXY[0][0]);
+			MaxMinXY[1][0] = Math.min(temp[1], MaxMinXY[1][0]);
+			temp = Utils.maxMin(y);
+			MaxMinXY[0][1] = Math.max(temp[0], MaxMinXY[0][1]);
+			MaxMinXY[1][1] = Math.min(temp[1], MaxMinXY[1][1]);
+		}
 
 		plot.addPoints(x, y, Plot.LINE);
 		plot.draw();
