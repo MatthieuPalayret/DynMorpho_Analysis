@@ -329,8 +329,8 @@ public class Results {
 			linearityPrecised.saveAsPrecise(params.childDir + File.separator + "2-Results_per_frame.csv", 5);
 			if (params.twoColourAnalysis) {
 				extractAndSaveEachColourSeparately(rt, "1-Protrusion_center_of_mass_positions", 3);
-				extractAndSaveEachColourSeparately(rt, "2-Results", 5);
-				extractAndSaveEachColourSeparately(rt, "2-Results_per_frame", 5);
+				extractAndSaveEachColourSeparately(linearity, "2-Results", 5);
+				extractAndSaveEachColourSeparately(linearityPrecised, "2-Results_per_frame", 5);
 			}
 
 			params.save();

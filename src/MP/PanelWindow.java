@@ -50,6 +50,11 @@ public class PanelWindow implements PlugIn {
 
 	class CustomCanvas extends ImageCanvas {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -9115778804562252997L;
+
 		CustomCanvas(ImagePlus imp) {
 			super(imp);
 		}
@@ -64,6 +69,10 @@ public class PanelWindow implements PlugIn {
 
 	class CustomWindow extends ImageWindow implements ActionListener {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = -902908606714118520L;
 		private Button button1, button2;
 
 		CustomWindow(ImagePlus imp, ImageCanvas ic) {
@@ -109,6 +118,10 @@ public class PanelWindow implements PlugIn {
 
 	class CustomStackWindow extends StackWindow implements ActionListener {
 
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 4337442636053434421L;
 		private Button button1, button2;
 
 		CustomStackWindow(ImagePlus imp, ImageCanvas ic) {
