@@ -53,12 +53,87 @@ public class Align_Trajectories extends Analyse_Trajectories {
 			IJ.log("- " + cellName + " countains " + finalHashMap.get(cellName).trajTracks.size() + " tracks.");
 		}
 
-		// For each cell, reorientate the cell trajectory
-		double[] XYmaxMin = new double[4]; // Store maximal and minimal X' and Y' values for the further plot.
-		int frameNumber = 0;
+		// For each cell, globally re-orientate the cell trajectory
+		double[] XYmaxMin = cellGlobalAlignment();
+		// Plot all the trajectories
+		plotAlignedCells(XYmaxMin, (int) XYmaxMin[4]);
+
+		// For each cell, re-orientate precisely the cell trajectory, squeezing it to
+		// the x axis.
 		it2 = finalHashMap.keySet().iterator();
 		while (it2.hasNext()) {
 			String cellName = it2.next();
+			// for the cell trajectory and all the track trajectories, add two columns X'
+			// and Y' in the ResultsTable
+			CellContainer cell = finalHashMap.get(cellName);
+
+			// Squeeze the cell trajectory to the x axis.
+			double trajlength = 0;
+			cell.cellTrack.setValue(ResultsTableMt.X_CENTROID, 0, 0);
+			cell.cellTrack.setValue(ResultsTableMt.Y_CENTROID, 0, 0);
+			for (int row = 1; row < cell.cellTrack.getCounter(); row++) {
+				trajlength += Utils.getDistance(cell.cellTrack, row, row - 1);
+				cell.cellTrack.setValue(ResultsTableMt.X_CENTROID, row, trajlength);
+				cell.cellTrack.setValue(ResultsTableMt.Y_CENTROID, row, 0);
+			}
+
+			// Change system coordinate for each frame for each track trajectory
+			Iterator<Integer> it3 = cell.trajTracks.keySet().iterator();
+			while (it3.hasNext()) {
+				ResultsTableMt rtTrack = cell.trajTracks.get(it3.next());
+				int rowCell = 0;
+
+				for (int rowTrack = 0; rowTrack < rtTrack.getCounter(); rowTrack++) {
+					// Find the corresponding cell point (for the same frame)
+					int frameTrack = (int) rtTrack.getValueAsDouble(ResultsTableMt.FRAME, rowTrack);
+					while (rowCell < cell.cellTrack.getCounter()
+							&& cell.cellTrack.getValueAsDouble(ResultsTableMt.FRAME, rowCell) < frameTrack)
+						rowCell++;
+					if (cell.cellTrack.getValueAsDouble(ResultsTableMt.FRAME, rowCell) == frameTrack) {
+
+						double[] coordP = new double[] { rtTrack.getValueAsDouble(ResultsTableMt.X, rowTrack),
+								rtTrack.getValueAsDouble(ResultsTableMt.Y, rowTrack) };
+						double[] originX = new double[] { cell.cellTrack.getValueAsDouble(ResultsTableMt.X, rowCell),
+								cell.cellTrack.getValueAsDouble(ResultsTableMt.Y, rowCell) };
+						double[] originXnew = new double[] {
+								cell.cellTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, rowCell), 0 };
+						if (rowCell == 0) { // Just do the translation, not the rotation
+							coordP = Utils.minus(coordP, originX);
+						} else {
+							double[] originXminusOne = new double[] {
+									cell.cellTrack.getValueAsDouble(ResultsTableMt.X, rowCell - 1),
+									cell.cellTrack.getValueAsDouble(ResultsTableMt.Y, rowCell - 1) };
+							double[] uX = Utils.normalise(Utils.minus(originX, originXminusOne));
+
+							// First translation: remove origin X
+							coordP = Utils.minus(coordP, originX);
+
+							// Rotation
+							double[] result = new double[2];
+							result[0] = Utils.scalar(uX, coordP); // Rotation (matrix) of coordinate system
+							result[1] = -uX[1] * coordP[0] + uX[0] * coordP[1];
+							coordP = result;
+
+							// Add origin X'
+							coordP = Utils.plus(coordP, originXnew);
+						}
+
+						rtTrack.setValue(ResultsTableMt.X_CENTROID, rowTrack, coordP[0]);
+						rtTrack.setValue(ResultsTableMt.Y_CENTROID, rowTrack, coordP[1]);
+					}
+				}
+			}
+		}
+
+		plotAlignedCells(XYmaxMin, (int) XYmaxMin[4]);
+	}
+
+	private double[] cellGlobalAlignment() {
+		// For each cell, re-orientate the cell trajectory
+		double[] XYmaxMin = new double[5]; // Store X'max, X'min, Y'max, Y'min and frameNumber for the further plot.
+		Iterator<String> it = finalHashMap.keySet().iterator();
+		while (it.hasNext()) {
+			String cellName = it.next();
 			// for the cell trajectory and all the track trajectories, add two columns X'
 			// and Y' in the ResultsTable
 			CellContainer cell = finalHashMap.get(cellName);
@@ -70,7 +145,7 @@ public class Align_Trajectories extends Analyse_Trajectories {
 			CoordinateSystemChange syst = new CoordinateSystemChange(newOrigin, newXDirection);
 			changeSystemCoordinate(cell.cellTrack, syst);
 			XYmaxMin = updateXYmaxMin(XYmaxMin, cell.cellTrack);
-			frameNumber = Math.max(frameNumber, (int) Utils.getMax(cell.cellTrack, ResultsTableMt.FRAME));
+			XYmaxMin[4] = Math.max(XYmaxMin[4], Utils.getMax(cell.cellTrack, ResultsTableMt.FRAME));
 
 			Iterator<Integer> it3 = cell.trajTracks.keySet().iterator();
 			while (it3.hasNext()) {
@@ -79,6 +154,10 @@ public class Align_Trajectories extends Analyse_Trajectories {
 				XYmaxMin = updateXYmaxMin(XYmaxMin, rtTemp);
 			}
 		}
+		return XYmaxMin;
+	}
+
+	private void plotAlignedCells(double[] XYmaxMin, int frameNumber) {
 
 		// Plot all the trajectories
 		Plot plot = new Plot("Aligned trajectories - timescale: towards darker colours", "X' axis (µm)",
@@ -87,10 +166,10 @@ public class Align_Trajectories extends Analyse_Trajectories {
 		Plot plot2 = new Plot("Aligned trajectories - darker rear actin spots", "X' axis (µm)", "Y' axis (µm)");
 		plot2.setLimits(XYmaxMin[1], XYmaxMin[0], XYmaxMin[3], XYmaxMin[2]);
 
-		it2 = finalHashMap.keySet().iterator();
+		Iterator<String> it = finalHashMap.keySet().iterator();
 		int i = 0;
-		while (it2.hasNext()) {
-			String cellName = it2.next();
+		while (it.hasNext()) {
+			String cellName = it.next();
 			CellContainer cell = finalHashMap.get(cellName);
 			Color color = Utils.getGradientColor(Color.RED, Color.BLUE, finalHashMap.size(), i++);
 			drawTraj(plot, cell.cellTrack, color, true, true, frameNumber);
