@@ -337,21 +337,22 @@ public class Results {
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private void extractAndSaveEachColourSeparately(ResultsTableMt rt, String fileName, int precision) {
 		ResultsTableMt green = new ResultsTableMt();
 		initialiseRt(green, false);
 		ResultsTableMt red = new ResultsTableMt();
 		initialiseRt(red, false);
 
-		if (rt.getCounter() <= 1)
+		if (rt.getCounter() < 1)
 			return;
 		for (int row = 0; row < rt.getCounter(); row++) {
-			ResultsTableMt.addRow(rt, (rt.getValue(COLOUR, row) == CellDataR.GREEN) ? green : red, row);
+			ResultsTableMt.addRow(rt, (rt.getValueAsDouble(COLOUR, row) == CellDataR.GREEN) ? green : red, row);
 		}
 
-		green.saveAsPrecise(params.childDir + File.separator + fileName + "_green.csv", precision);
-		red.saveAsPrecise(params.childDir + File.separator + fileName + "_red.csv", precision);
+		if (green.getCounter() > 0)
+			green.saveAsPrecise(params.childDir + File.separator + fileName + "_green.csv", precision);
+		if (red.getCounter() > 0)
+			red.saveAsPrecise(params.childDir + File.separator + fileName + "_red.csv", precision);
 	}
 
 	public void buildProtrusions(ImagePlus imp, boolean save) {

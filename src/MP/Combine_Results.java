@@ -49,6 +49,8 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 	private HashMap<String, Integer> hmWhichCells = new HashMap<String, Integer>();
 	private static final int GREEN_CELLS = 0, RED_CELLS = 1, ALL_CELLS = 2;
 	private static final String[] cellTag = { "_green", "_red", "" };
+	private static final String[] buttonLabel = { "Analyse only green cells", "Analyse only red cells",
+			"Analyse all cells" };
 	private static final Color LIGHT_GREEN = new Color(179, 255, 179), GREEN = new Color(128, 255, 128),
 			RED = new Color(255, 128, 128), LIGHT_RED = new Color(255, 179, 179);
 	private DefaultListModel<String> listmodel = new DefaultListModel<String>();
@@ -131,7 +133,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		btnDeleteFolders.setEnabled(false);
 		getContentPane().add(btnDeleteFolders, gbc_btnDeleteFolders);
 
-		rdbtnAnalyseOnlyGreen = new JRadioButton("Analyse only green cells");
+		rdbtnAnalyseOnlyGreen = new JRadioButton(buttonLabel[GREEN_CELLS]);
 		buttonGroup.add(rdbtnAnalyseOnlyGreen);
 		GridBagConstraints gbc_rdbtnAnalyseOnlyGreen = new GridBagConstraints();
 		gbc_rdbtnAnalyseOnlyGreen.anchor = GridBagConstraints.WEST;
@@ -143,7 +145,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		rdbtnAnalyseOnlyGreen.addActionListener(this);
 		getContentPane().add(rdbtnAnalyseOnlyGreen, gbc_rdbtnAnalyseOnlyGreen);
 
-		rdbtnAnalyseOnlyRed = new JRadioButton("Analyse only red cells");
+		rdbtnAnalyseOnlyRed = new JRadioButton(buttonLabel[RED_CELLS]);
 		buttonGroup.add(rdbtnAnalyseOnlyRed);
 		GridBagConstraints gbc_rdbtnAnalyseOnlyRed = new GridBagConstraints();
 		gbc_rdbtnAnalyseOnlyRed.anchor = GridBagConstraints.WEST;
@@ -155,7 +157,7 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 		rdbtnAnalyseOnlyRed.addActionListener(this);
 		getContentPane().add(rdbtnAnalyseOnlyRed, gbc_rdbtnAnalyseOnlyRed);
 
-		rdbtnAnalyseAllCells = new JRadioButton("Analyse all cells");
+		rdbtnAnalyseAllCells = new JRadioButton(buttonLabel[ALL_CELLS]);
 		buttonGroup.add(rdbtnAnalyseAllCells);
 		GridBagConstraints gbc_rdbtnAnalyseAllCells = new GridBagConstraints();
 		gbc_rdbtnAnalyseAllCells.anchor = GridBagConstraints.WEST;
@@ -307,7 +309,9 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 					if (file.isDirectory()) {
 						for (int j = 0; j < cellTag.length; j++)
 							allFoldersWithTwoColorResults[j] = allFoldersWithTwoColorResults[j]
-									&& new File(file + File.separator + "2-Results" + cellTag[j] + ".csv").exists();
+									&& new File(file + File.separator + "2-Results" + cellTag[j] + ".csv").exists()
+									&& ResultsTableMt.open2(file + File.separator + "2-Results" + cellTag[j] + ".csv")
+											.getCounter() > 0;
 					} else {
 						allFoldersWithTwoColorResults[GREEN_CELLS] = false;
 						allFoldersWithTwoColorResults[RED_CELLS] = false;
@@ -319,6 +323,33 @@ public class Combine_Results extends JFrame implements PlugIn, ActionListener, L
 				rdbtnAnalyseOnlyRed.setEnabled(allFoldersWithTwoColorResults[RED_CELLS]);
 				rdbtnAnalyseOnlyRed.setBackground(allFoldersWithTwoColorResults[RED_CELLS] ? RED : LIGHT_RED);
 				rdbtnAnalyseAllCells.setEnabled(allFoldersWithTwoColorResults[ALL_CELLS]);
+				if (index.length == 1) {
+					File file = new File(
+							listmodel.get(index[0]) + File.separator + "2-Results" + cellTag[GREEN_CELLS] + ".csv");
+					if (file.exists())
+						rdbtnAnalyseOnlyGreen.setText(buttonLabel[GREEN_CELLS] + " ("
+								+ ResultsTableMt.open2(file.getAbsolutePath()).getCounter() + ")");
+					else
+						rdbtnAnalyseOnlyGreen.setText(buttonLabel[GREEN_CELLS]);
+					file = new File(
+							listmodel.get(index[0]) + File.separator + "2-Results" + cellTag[RED_CELLS] + ".csv");
+					if (file.exists())
+						rdbtnAnalyseOnlyRed.setText(buttonLabel[RED_CELLS] + " ("
+								+ ResultsTableMt.open2(file.getAbsolutePath()).getCounter() + ")");
+					else
+						rdbtnAnalyseOnlyRed.setText(buttonLabel[RED_CELLS]);
+					file = new File(
+							listmodel.get(index[0]) + File.separator + "2-Results" + cellTag[ALL_CELLS] + ".csv");
+					if (file.exists())
+						rdbtnAnalyseAllCells.setText(buttonLabel[ALL_CELLS] + " ("
+								+ ResultsTableMt.open2(file.getAbsolutePath()).getCounter() + ")");
+					else
+						rdbtnAnalyseAllCells.setText(buttonLabel[ALL_CELLS]);
+				} else {
+					rdbtnAnalyseOnlyGreen.setText(buttonLabel[GREEN_CELLS]);
+					rdbtnAnalyseOnlyRed.setText(buttonLabel[RED_CELLS]);
+					rdbtnAnalyseAllCells.setText(buttonLabel[ALL_CELLS]);
+				}
 
 				int sum = 0;
 				int indexTrue = -1;

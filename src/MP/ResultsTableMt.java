@@ -21,9 +21,9 @@ import ij.util.Tools;
 
 public class ResultsTableMt extends ResultsTable {
 
-	public static final int FRAME = 0, X = 1, Y = 2, Z = 3, INTENSITY = 4, NUMBER = 5, GROUP = 6;
+	public static final int FRAME = 0, X = 1, Y = 2, Z = 3, INTENSITY = 4, NUMBER = 5, GROUP = 6, JD = 7;
 
-	private static final String[] defaultHeadings = { "Frame", "X", "Y", "Z", "Intensity", "Number", "Group" };
+	private static final String[] defaultHeadings = { "Frame", "X", "Y", "Z", "Intensity", "Number", "Group", "JD" };
 
 	private int freeColumn = defaultHeadings.length;
 
@@ -164,9 +164,7 @@ public class ResultsTableMt extends ResultsTable {
 
 		if (column_ == defaultHeadings.length) {
 			for (; column_ < freeColumn; column_++) {
-				if (!columnExists(column_))
-					return COLUMN_NOT_FOUND;
-				else if (getColumnHeading(column_).equals(column))
+				if (columnExists(column_) && getColumnHeading(column_).equals(column))
 					return column_;
 			}
 		}

@@ -56,7 +56,7 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 					ResultsTableMt rtTemp = ResultsTableMt.open2(pathTemp);
 					addRtFromAnalysedFileToPlot(rtTemp);
 				} else {
-					IJ.log(pathFile + " does not countain any 0-Trajectories.csv file to analyse. It is thus ignred.");
+					IJ.log(pathFile + " does not countain any 0-Trajectories.csv file to analyse. It is thus ignored.");
 				}
 			} else if (pathFile.endsWith(".csv")) {
 				ResultsTableMt rtTemp = ResultsTableMt.open2(pathFile);
@@ -101,29 +101,27 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 		IJ.log("" + plotNumber + " trajectories plotted.");
 	}
 
-	@SuppressWarnings("deprecation")
 	private void addRtFromAnalysedFileToPlot(ResultsTableMt rt) {
 		if (rt == null || rt.getCounter() <= 1)
 			return;
 		int CELL_NUMBER = rt.getColumnIndex("Cell number");
-		int cellNumber = (int) rt.getValue(CELL_NUMBER, 0);
+		int cellNumber = (int) rt.getValueAsDouble(CELL_NUMBER, 0);
 		int row = 1;
 		while (row < rt.getCounter()) {
 			ResultsTableMt rtTemp = new ResultsTableMt();
-			while (row < rt.getCounter() && rt.getValue(CELL_NUMBER, row) == cellNumber) {
+			while (row < rt.getCounter() && rt.getValueAsDouble(CELL_NUMBER, row) == cellNumber) {
 				rtTemp.incrementCounter();
-				rtTemp.addValue(ResultsTableMt.X, rt.getValue(ResultsTableMt.X, row));
-				rtTemp.addValue(ResultsTableMt.Y, rt.getValue(ResultsTableMt.Y, row));
+				rtTemp.addValue(ResultsTableMt.X, rt.getValueAsDouble(ResultsTableMt.X, row));
+				rtTemp.addValue(ResultsTableMt.Y, rt.getValueAsDouble(ResultsTableMt.Y, row));
 				row++;
 			}
 			addTrajToPlot(rtTemp.getColumnAsDoubles(ResultsTableMt.X), rtTemp.getColumnAsDoubles(ResultsTableMt.Y));
 
 			if (row < rt.getCounter())
-				cellNumber = (int) rt.getValue(CELL_NUMBER, row);
+				cellNumber = (int) rt.getValueAsDouble(CELL_NUMBER, row);
 		}
 	}
 
-	@SuppressWarnings("deprecation")
 	private void addRtFromImarisFileToPlot(ResultsTableMt rt) {
 		if (rt == null || rt.getCounter() <= 1)
 			return;
@@ -132,14 +130,14 @@ public class Plot_Trajectories extends Combine_Imaris_Results {
 		PositionY = rt.getColumnIndex("Position Y");
 		TrackID = rt.getColumnIndex("TrackID");
 		for (int row = 0; row < rt.getCounter(); row++) {
-			ResultsTableMt temp = hashMap.get((int) rt.getValue(TrackID, row));
+			ResultsTableMt temp = hashMap.get((int) rt.getValueAsDouble(TrackID, row));
 			if (temp == null) {
 				temp = new ResultsTableMt();
-				hashMap.put((int) rt.getValue(TrackID, row), temp);
+				hashMap.put((int) rt.getValueAsDouble(TrackID, row), temp);
 			}
 			temp.incrementCounter();
-			temp.addValue(ResultsTableMt.X, rt.getValue(PositionX, row));
-			temp.addValue(ResultsTableMt.Y, rt.getValue(PositionY, row));
+			temp.addValue(ResultsTableMt.X, rt.getValueAsDouble(PositionX, row));
+			temp.addValue(ResultsTableMt.Y, rt.getValueAsDouble(PositionY, row));
 		}
 
 		List<Integer> listTrackID = new ArrayList<Integer>(hashMap.keySet());
