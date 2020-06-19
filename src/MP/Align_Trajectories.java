@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 
 import ij.IJ;
 import ij.gui.Plot;
@@ -13,6 +14,8 @@ public class Align_Trajectories extends Analyse_Trajectories {
 	private final int CELL = 0, TRAJ = 1;
 	private File[] directorys = new File[2];
 	private HashMap<String, CellContainer> finalHashMap = new HashMap<String, CellContainer>();
+	ResultsTableMt trackResults = new ResultsTableMt();
+	private int savePrecision = 6;
 
 	public Align_Trajectories() {
 	}
@@ -50,19 +53,142 @@ public class Align_Trajectories extends Analyse_Trajectories {
 		Iterator<String> it2 = finalHashMap.keySet().iterator();
 		while (it2.hasNext()) {
 			String cellName = it2.next();
-			IJ.log("- " + cellName + " countains " + finalHashMap.get(cellName).trajTracks.size() + " tracks.");
+			IJ.log("- " + cellName + " contains " + finalHashMap.get(cellName).trajTracks.size() + " tracks.");
 		}
 
 		// For each cell, globally re-orientate the cell trajectory
 		double[] XYmaxMin = cellGlobalAlignment();
 		// Plot all the trajectories
-		plotAlignedCells(XYmaxMin, (int) XYmaxMin[4]);
+		plotAlignedCells(XYmaxMin, (int) XYmaxMin[4], false);
 
 		// For each cell, re-orientate precisely the cell trajectory, squeezing it to
 		// the x axis.
+		boolean preciseAlignment = false;
+		if (preciseAlignment) {
+			cellPreciseAlignment();
+			plotAlignedCells(XYmaxMin, (int) XYmaxMin[4], true);
+		}
+
+		// --------------------
+		// Analyse the tracks
+		// For each track, calculate the average speed, the speed_x, the directionality
+		// (global displacement / trajectory length), trajectory length, global
+		// displacement, time length, and rear or upfront (cellName and trackNumber)
 		it2 = finalHashMap.keySet().iterator();
 		while (it2.hasNext()) {
 			String cellName = it2.next();
+			Iterator<Entry<Integer, ResultsTableMt>> itTracks = finalHashMap.get(cellName).trajTracks.entrySet()
+					.iterator();
+			ResultsTableMt cellTrack = finalHashMap.get(cellName).cellTrack;
+
+			while (itTracks.hasNext()) {
+				Entry<Integer, ResultsTableMt> entry = itTracks.next();
+				ResultsTableMt rtTrack = entry.getValue();
+				double trajLength = 0;
+				int type = 0;
+				int cellRow = 0;
+				while (cellRow < cellTrack.getCounter() && cellTrack.getValueAsDouble(ResultsTableMt.FRAME,
+						cellRow) < rtTrack.getValueAsDouble(ResultsTableMt.FRAME, 0))
+					cellRow++;
+				if (cellRow < cellTrack.getCounter())
+					if (rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, 0) < cellTrack
+							.getValueAsDouble(ResultsTableMt.X_CENTROID, cellRow))
+						type = REAR;
+					else
+						type = UPFRONT;
+
+				for (int row = 1; row < rtTrack.getCounter(); row++) {
+					trajLength += Utils.getDistance(rtTrack, row, row - 1);
+
+					if (cellRow++ < cellTrack.getCounter())
+						if (rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, row) < cellTrack
+								.getValueAsDouble(ResultsTableMt.X_CENTROID, cellRow))
+							type = (type == REAR) ? REAR : MIXED;
+						else
+							type = (type == UPFRONT) ? UPFRONT : MIXED;
+				}
+
+				// For each track, calculate the average speed, the speed_x, the directionality
+				// (global displacement / trajectory length), trajectory length, global
+				// displacement, time length, and rear or upfront (cellName and trackNumber)
+				trackResults.incrementCounter();
+				trackResults.addValue("Origin", cellName);
+				trackResults.addValue(ResultsTableMt.GROUP, entry.getKey());
+				double timeLength = (rtTrack.getValue("Time", rtTrack.getCounter() - 1) - rtTrack.getValue("Time", 0));
+				trackResults.addValue("Speed (µm/s)", trajLength / timeLength);
+				trackResults.addValue("Speed_x (µm/s)",
+						(rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, rtTrack.getCounter() - 1)
+								- rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, 0)) / timeLength);
+				double globalDisplacement = Utils.getDistance(rtTrack, rtTrack.getCounter() - 1, 0);
+				trackResults.addValue("Directionality [0..1]", globalDisplacement / trajLength);
+				trackResults.addValue("Trajectory length (µm)", trajLength);
+				trackResults.addValue("Global displacement (µm)", globalDisplacement);
+				trackResults.addValue("Time length (s)", timeLength);
+				trackResults.addValue("Rear (-1) or upfront (+1)", type);
+			}
+		}
+		trackResults.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_Analysis.csv", savePrecision);
+
+		// Output averages and stdev
+		ResultsTableMt rtRear = new ResultsTableMt(), rtUpfront = new ResultsTableMt();
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed (µm/s)");
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed_x (µm/s)");
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Directionality [0..1]");
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Trajectory length (µm)");
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Global displacement (µm)");
+		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Time length (s)");
+		rtRear.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_rear_statistics.csv", savePrecision);
+		rtUpfront.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_upfront_statistics.csv", savePrecision);
+	}
+
+	static final int REAR = -1, MIXED = 0, UPFRONT = 1;
+
+	private void calculateAvgStdev(ResultsTableMt rt, ResultsTableMt rtRear, ResultsTableMt rtUpfront, String column) {
+		double avgRear = 0, avgUp = 0;
+		int rearNb = 0, upNb = 0;
+		for (int row = 0; row < rt.getCounter(); row++) {
+			int rearOrUp = (int) rt.getValue("Rear (-1) or upfront (+1)", row);
+			if (rearOrUp == REAR) {
+				avgRear += rt.getValue(column, row);
+				rearNb++;
+			} else if (rearOrUp == UPFRONT) {
+				avgUp += rt.getValue(column, row);
+				upNb++;
+			}
+		}
+		if (rearNb > 0)
+			avgRear /= rearNb;
+		if (upNb > 0)
+			avgUp /= upNb;
+
+		double stdevRear = 0, stdevUp = 0;
+		for (int row = 0; row < rt.getCounter(); row++) {
+			int rearOrUp = (int) rt.getValue("Rear (-1) or upfront (+1)", row);
+			if (rearOrUp == REAR) {
+				stdevRear += Math.pow(rt.getValue(column, row) - avgRear, 2);
+			} else if (rearOrUp == UPFRONT) {
+				stdevUp += Math.pow(rt.getValue(column, row) - avgUp, 2);
+			}
+		}
+		if (rearNb > 0)
+			stdevRear /= rearNb;
+		if (upNb > 0)
+			stdevUp /= upNb;
+
+		if (rtRear.getCounter() == 0)
+			rtRear.incrementCounter();
+		rtRear.addValue(column + " Avg", avgRear);
+		rtRear.addValue(column + " Stdev", stdevRear);
+		if (rtUpfront.getCounter() == 0)
+			rtUpfront.incrementCounter();
+		rtUpfront.addValue(column + " Avg", avgUp);
+		rtUpfront.addValue(column + " Stdev", stdevUp);
+	}
+
+	private void cellPreciseAlignment() {
+		Iterator<String> it = finalHashMap.keySet().iterator();
+		while (it.hasNext()) {
+			String cellName = it.next();
 			// for the cell trajectory and all the track trajectories, add two columns X'
 			// and Y' in the ResultsTable
 			CellContainer cell = finalHashMap.get(cellName);
@@ -124,8 +250,6 @@ public class Align_Trajectories extends Analyse_Trajectories {
 				}
 			}
 		}
-
-		plotAlignedCells(XYmaxMin, (int) XYmaxMin[4]);
 	}
 
 	private double[] cellGlobalAlignment() {
@@ -157,36 +281,43 @@ public class Align_Trajectories extends Analyse_Trajectories {
 		return XYmaxMin;
 	}
 
-	private void plotAlignedCells(double[] XYmaxMin, int frameNumber) {
+	private void plotAlignedCells(double[] XYmaxMin, int frameNumber, boolean plotTowardsDarkerColours) {
 
 		// Plot all the trajectories
 		Plot plot = new Plot("Aligned trajectories - timescale: towards darker colours", "X' axis (µm)",
 				"Y' axis (µm)");
 		plot.setLimits(XYmaxMin[1], XYmaxMin[0], XYmaxMin[3], XYmaxMin[2]);
 		Plot plot2 = new Plot("Aligned trajectories - darker rear actin spots", "X' axis (µm)", "Y' axis (µm)");
-		plot2.setLimits(XYmaxMin[1], XYmaxMin[0], XYmaxMin[3], XYmaxMin[2]);
+		// plot2.setLimits(XYmaxMin[1], XYmaxMin[0], XYmaxMin[3], XYmaxMin[2]);
+		plot2.setLimits(-9, 20, -9, 10);
 
 		Iterator<String> it = finalHashMap.keySet().iterator();
 		int i = 0;
 		while (it.hasNext()) {
 			String cellName = it.next();
 			CellContainer cell = finalHashMap.get(cellName);
-			Color color = Utils.getGradientColor(Color.RED, Color.BLUE, finalHashMap.size(), i++);
-			drawTraj(plot, cell.cellTrack, color, true, true, frameNumber);
-			drawTraj(plot2, cell.cellTrack, color, true, true, -1);
+			Color color = Color.BLACK; // Utils.getGradientColor(Color.RED, Color.BLUE, finalHashMap.size(), i++);
+			if (plotTowardsDarkerColours)
+				drawTraj(plot, cell.cellTrack, color, true, true, frameNumber);
+			drawTraj(plot2, cell.cellTrack, color, false, true, -1);
 
 			Iterator<Integer> it3 = cell.trajTracks.keySet().iterator();
 			while (it3.hasNext()) {
 				ResultsTableMt rtTemp = cell.trajTracks.get(it3.next());
-				drawTraj(plot, rtTemp, color, false, true, frameNumber);
+				if (plotTowardsDarkerColours)
+					drawTraj(plot, rtTemp, color, false, true, frameNumber);
 
 				// Other plot: if actin traj are behind the cell centre, colour it darker,
 				// otherwise, colour it brighter!
 				drawTraj2(plot2, rtTemp, color, cell.cellTrack, true);
 			}
 		}
-		plot.show();
+		if (plotTowardsDarkerColours)
+			plot.show();
 		plot2.show();
+
+		Utils.saveTiff(plot2.makeHighResolution(plot2.getTitle(), 2, true, false),
+				directorys[TRAJ] + File.separator + "Trajectory_plot.tiff", false);
 	}
 
 	private void drawTraj(Plot plot, ResultsTableMt rt, Color color, boolean cellTrack, boolean newCoord,
@@ -211,6 +342,8 @@ public class Align_Trajectories extends Analyse_Trajectories {
 	}
 
 	private void drawTraj2(Plot plot, ResultsTableMt rt, Color color, ResultsTableMt rtCell, boolean newCoord) {
+		boolean noVectorButGradient = true;
+
 		plot.setLineWidth(2);
 		int xColumn = newCoord ? ResultsTableMt.X_CENTROID : ResultsTableMt.X;
 		int yColumn = newCoord ? ResultsTableMt.Y_CENTROID : ResultsTableMt.Y;
@@ -221,14 +354,21 @@ public class Align_Trajectories extends Analyse_Trajectories {
 			while (cellRow < rtCell.getCounter() && rtCell.getValueAsDouble(ResultsTableMt.FRAME, cellRow) < frame)
 				cellRow++;
 			if (cellRow < rtCell.getCounter()) {
-				if (rt.getValueAsDouble(xColumn, row) < rtCell.getValueAsDouble(xColumn, cellRow))
-					plot.setColor(color.darker());
-				else
-					plot.setColor(color.brighter());
+				if (rt.getValueAsDouble(xColumn, row) < rtCell.getValueAsDouble(xColumn, cellRow)) {
+					if (noVectorButGradient)
+						plot.setColor(Utils.getGradientColor(Color.ORANGE, Color.RED, rt.getCounter(), row));
+					else
+						plot.setColor(color.darker());
+				} else {
+					if (noVectorButGradient)
+						plot.setColor(Utils.getGradientColor(Color.YELLOW, Color.GREEN, rt.getCounter(), row));
+					else
+						plot.setColor(color.brighter());
+				}
 			} else
 				plot.setColor(color);
 
-			if (row == 1) {
+			if (!noVectorButGradient && row == 1) {
 				plot.setLineWidth(1);
 				plot.addPoints(new double[] { rt.getValueAsDouble(xColumn, 0) },
 						new double[] { rt.getValueAsDouble(yColumn, 0) }, Plot.X);
@@ -236,7 +376,7 @@ public class Align_Trajectories extends Analyse_Trajectories {
 				plot.setLineWidth(2);
 			}
 
-			if (row == rt.getCounter() - 1) {
+			if (!noVectorButGradient && row == rt.getCounter() - 1) {
 				plot.drawVectors(new double[] { rt.getValueAsDouble(xColumn, row - 1) },
 						new double[] { rt.getValueAsDouble(yColumn, row - 1) },
 						new double[] { rt.getValueAsDouble(xColumn, row) },
