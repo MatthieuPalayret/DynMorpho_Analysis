@@ -6,13 +6,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.ListIterator;
 
-import Cell.CellData;
-import DateAndTime.Time;
-import IAClasses.Region;
-import IO.PropertyWriter;
-import TimeAndDate.TimeAndDate;
-import UtilClasses.GenUtils;
-import UtilClasses.Utilities;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -23,6 +16,14 @@ import ij.io.Opener;
 import ij.plugin.filter.GaussianBlur;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.DateAndTime.Time;
+import net.calm.iaclasslibrary.IAClasses.Region;
+import net.calm.iaclasslibrary.IO.PropertyWriter;
+import net.calm.iaclasslibrary.Revision.Revision;
+import net.calm.iaclasslibrary.TimeAndDate.TimeAndDate;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
+import net.calm.iaclasslibrary.UtilClasses.Utilities;
 
 public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 
@@ -119,7 +120,7 @@ public class Analyse_Protrusion_MP extends AnalyseMovieMP {
 	public void runFromAnalyseMovieMP(String arg) {
 		LocalDateTime startTime = LocalDateTime.now();
 
-		TITLE = TITLE + "_v" + Revision.Revision.VERSION + "." + numFormat.format(Revision.Revision.revisionNumber);
+		TITLE = TITLE + "_v" + Revision.VERSION + "." + numFormat.format(Revision.revisionNumber);
 		IJ.log(TITLE);
 		IJ.log(TimeAndDate.getCurrentTimeAndDate());
 		if (IJ.getInstance() != null && WindowManager.getIDList() == null) {

@@ -3,12 +3,12 @@ package MP;
 
 import java.io.File;
 
-import UserVariables.UserVariables;
 import ij.ImagePlus;
+import net.calm.iaclasslibrary.UserVariables.UserVariables;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.504;
+	public static final double version = 1.505;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()

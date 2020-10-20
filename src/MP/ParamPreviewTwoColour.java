@@ -14,13 +14,13 @@ import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 
-import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.plugin.Duplicator;
 import ij.process.LUT;
 import ij.process.StackStatistics;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
 public class ParamPreviewTwoColour extends ParamPreview {
 

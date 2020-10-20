@@ -8,11 +8,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import Cell.CellData;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Overlay;
 import ij.plugin.filter.Analyzer;
+import net.calm.iaclasslibrary.Cell.CellData;
 
 public class Results {
 

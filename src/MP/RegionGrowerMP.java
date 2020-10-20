@@ -2,11 +2,6 @@ package MP;
 
 import java.util.ArrayList;
 
-import Cell.CellData;
-import IAClasses.Region;
-import IAClasses.Utils;
-import Segmentation.RegionGrower;
-import UserVariables.UserVariables;
 import ij.IJ;
 import ij.Prefs;
 import ij.gui.PointRoi;
@@ -20,6 +15,10 @@ import ij.process.Blitter;
 import ij.process.ByteBlitter;
 import ij.process.ByteProcessor;
 import ij.process.ImageProcessor;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.IAClasses.Region;
+import net.calm.iaclasslibrary.Segmentation.RegionGrower;
+import net.calm.iaclasslibrary.UserVariables.UserVariables;
 
 public class RegionGrowerMP extends RegionGrower {
 
@@ -68,7 +67,7 @@ public class RegionGrowerMP extends RegionGrower {
 			} else {
 				init = initP.get(i - s);
 			}
-			if (!Utils.isEdgePixel(init[0], init[1], width, height, 1)) {
+			if (!net.calm.iaclasslibrary.IAClasses.Utils.isEdgePixel(init[0], init[1], width, height, 1)) {
 				ByteProcessor mask = new ByteProcessor(width, height);
 				mask.setColor(Region.MASK_BACKGROUND);
 				mask.fill();

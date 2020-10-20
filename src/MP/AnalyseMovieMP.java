@@ -40,31 +40,6 @@ import java.util.concurrent.Executors;
 
 import org.apache.commons.io.FilenameUtils;
 
-import Adapt.Bleb;
-import Adapt.BlebAnalyser;
-import Adapt.CurveMapAnalyser;
-import Adapt.FluorescenceDistAnalyser;
-import Adapt.NotificationThread;
-import Adapt.StaticVariables;
-import Cell.CellData;
-import Cell.MorphMap;
-import Curvature.CurveAnalyser;
-import DateAndTime.Time;
-import IAClasses.BoundaryPixel;
-import IAClasses.CrossCorrelation;
-import IAClasses.DSPProcessor;
-import IAClasses.ProgressDialog;
-import IAClasses.Region;
-import IAClasses.Utils;
-import IO.DataWriter;
-import IO.PropertyWriter;
-import Output.MultiThreadedOutputGenerator;
-import TimeAndDate.TimeAndDate;
-import UserVariables.UserVariables;
-import UtilClasses.GenUtils;
-import UtilClasses.GenVariables;
-import UtilClasses.Utilities;
-import Visualisation.MultiThreadedVisualisationGenerator;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -89,7 +64,33 @@ import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import ij.process.TypeConverter;
-import ui.GUI;
+import net.calm.adapt.Adapt.Bleb;
+import net.calm.adapt.Adapt.BlebAnalyser;
+import net.calm.adapt.Adapt.CurveMapAnalyser;
+import net.calm.adapt.Adapt.FluorescenceDistAnalyser;
+import net.calm.adapt.Adapt.NotificationThread;
+import net.calm.adapt.Adapt.StaticVariables;
+import net.calm.adapt.Output.MultiThreadedOutputGenerator;
+import net.calm.adapt.Visualisation.MultiThreadedVisualisationGenerator;
+import net.calm.adapt.ui.GUI;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.Cell.MorphMap;
+import net.calm.iaclasslibrary.Curvature.CurveAnalyser;
+import net.calm.iaclasslibrary.DateAndTime.Time;
+import net.calm.iaclasslibrary.IAClasses.BoundaryPixel;
+import net.calm.iaclasslibrary.IAClasses.CrossCorrelation;
+import net.calm.iaclasslibrary.IAClasses.DSPProcessor;
+import net.calm.iaclasslibrary.IAClasses.ProgressDialog;
+import net.calm.iaclasslibrary.IAClasses.Region;
+import net.calm.iaclasslibrary.IAClasses.Utils;
+import net.calm.iaclasslibrary.IO.DataWriter;
+import net.calm.iaclasslibrary.IO.PropertyWriter;
+import net.calm.iaclasslibrary.Revision.Revision;
+import net.calm.iaclasslibrary.TimeAndDate.TimeAndDate;
+import net.calm.iaclasslibrary.UserVariables.UserVariables;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
+import net.calm.iaclasslibrary.UtilClasses.GenVariables;
+import net.calm.iaclasslibrary.UtilClasses.Utilities;
 
 /**
  * Analyse_Movie is designed to quantify cell membrane dynamics and correlate
@@ -164,7 +165,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 	public void run(String arg) {
 		LocalDateTime startTime = LocalDateTime.now();
 
-		TITLE = TITLE + "_v" + Revision.Revision.VERSION + "." + numFormat.format(Revision.Revision.revisionNumber);
+		TITLE = TITLE + "_v" + Revision.VERSION + "." + numFormat.format(Revision.revisionNumber);
 		IJ.log(TITLE);
 		IJ.log(TimeAndDate.getCurrentTimeAndDate());
 		if (IJ.getInstance() != null && WindowManager.getIDList() == null) {

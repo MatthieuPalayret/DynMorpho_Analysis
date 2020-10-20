@@ -10,8 +10,6 @@ import java.util.ListIterator;
 import javax.swing.JLabel;
 import javax.swing.JRadioButton;
 
-import Cell.CellData;
-import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -21,6 +19,8 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.plugin.frame.RoiManager;
 import ij.process.LUT;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
 public class ParamVisualisationTwoColour extends ParamVisualisation {
 

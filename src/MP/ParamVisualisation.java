@@ -25,8 +25,6 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import Cell.CellData;
-import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
@@ -34,6 +32,8 @@ import ij.ImageStack;
 import ij.gui.Overlay;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
 public class ParamVisualisation extends JFrame
 		implements ActionListener, ChangeListener, ImageListener, FocusListener, KeyListener, MouseListener {

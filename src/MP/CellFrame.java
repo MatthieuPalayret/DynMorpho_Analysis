@@ -8,9 +8,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
 
-import Cell.CellData;
-import Curvature.CurveAnalyser;
-import UserVariables.UserVariables;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
@@ -21,6 +18,9 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
 import ij.process.FloatPolygon;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.Curvature.CurveAnalyser;
+import net.calm.iaclasslibrary.UserVariables.UserVariables;
 
 public class CellFrame {
 
@@ -189,8 +189,8 @@ public class CellFrame {
 
 			double x1 = rEq * Math.cos(n / rEq) - rEq;
 			double y1 = rEq * Math.sin(n / rEq) - 0;
-			double theta1 = IAClasses.Utils.arcTan(x1, y1);
-			double theta2 = IAClasses.Utils.arcTan(x1, -y1);
+			double theta1 = net.calm.iaclasslibrary.IAClasses.Utils.arcTan(x1, y1);
+			double theta2 = net.calm.iaclasslibrary.IAClasses.Utils.arcTan(x1, -y1);
 			if (Math.abs(theta1 - theta2) >= 180.0) {
 				if (theta2 > theta1) {
 					theta2 -= 360.0;

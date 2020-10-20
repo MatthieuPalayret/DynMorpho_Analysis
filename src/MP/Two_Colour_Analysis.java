@@ -4,10 +4,10 @@ import java.io.File;
 
 import javax.swing.JFileChooser;
 
-import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.Duplicator;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
 public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 

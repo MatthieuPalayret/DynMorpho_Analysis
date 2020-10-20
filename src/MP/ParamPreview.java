@@ -22,9 +22,6 @@ import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import Cell.CellData;
-import UserVariables.UserVariables;
-import UtilClasses.GenUtils;
 import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
@@ -35,6 +32,9 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.ByteProcessor;
 import ij.process.StackStatistics;
+import net.calm.iaclasslibrary.Cell.CellData;
+import net.calm.iaclasslibrary.UserVariables.UserVariables;
+import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
 public class ParamPreview extends JFrame
 		implements ActionListener, ImageListener, ChangeListener, FocusListener, KeyListener {

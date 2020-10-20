@@ -2,7 +2,7 @@ package MP;
 
 import java.awt.Color;
 
-import Cell.CellData;
+import net.calm.iaclasslibrary.Cell.CellData;
 
 public class CellDataR {
 
