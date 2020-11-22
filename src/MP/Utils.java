@@ -887,6 +887,26 @@ public class Utils {
 			return null;
 	}
 
+	public static File getADir(String title, String initialRoot, String initialFile) {
+		if (title == null || title == "")
+			title = "Choose a directory";
+		if (initialRoot == null || initialRoot == "")
+			initialRoot = "E:\\Data";
+
+		JFileChooser chooser = new JFileChooser();
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setDialogTitle(title);
+		chooser.setCurrentDirectory(new File(initialRoot));
+		chooser.setMultiSelectionEnabled(true);
+
+		int returnVal = chooser.showOpenDialog(null);
+		if (returnVal == JFileChooser.APPROVE_OPTION) {
+			return chooser.getSelectedFile().getAbsoluteFile();
+		} else
+			return null;
+	}
+
 	public static Color getGradientColor(Color ini, Color fin, int numberOfSteps, int step) {
 		if (numberOfSteps == 0)
 			return ini;

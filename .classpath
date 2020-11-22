@@ -19,5 +19,8 @@
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/poi-4.1.1/poi-4.1.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/jars/poi-4.1.1/poi-ooxml-4.1.1.jar"/>
 	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/flanagan.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/Multi_Kymograph-3.0.1.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/gdsc_smlm-0.7.0-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="C:/Users/matth/Fiji.app/plugins/gdsc_-1.4.0-SNAPSHOT.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
