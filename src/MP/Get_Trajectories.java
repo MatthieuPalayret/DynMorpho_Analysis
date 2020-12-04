@@ -3,6 +3,7 @@ package MP;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.io.File;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,11 +16,9 @@ import ij.gui.Overlay;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
-import ij.plugin.filter.PlugInFilter;
 import ij.process.FloatPolygon;
-import ij.process.ImageProcessor;
 
-public class Get_Trajectories implements PlugInFilter {
+public class Get_Trajectories extends Align_Trajectories {
 
 	ImagePlus imp;
 	int frame;
@@ -31,16 +30,16 @@ public class Get_Trajectories implements PlugInFilter {
 	}
 
 	@Override
-	public void run(ImageProcessor ip) {
-
-	}
-
-	@Override
-	public int setup(String arg0, ImagePlus imp) {
-		this.imp = imp;
+	public void run(String arg0) {
+		imp = IJ.getImage();
+		if (imp == null) {
+			IJ.log("Please open an movie of the cells to be analysed before running the Get_Trajectories plugin.");
+			return;
+		}
 		fileDirName = imp.getOriginalFileInfo().directory;
 		if (fileDirName == null || fileDirName == "")
 			fileDirName = Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
+		setDirectory(new File(fileDirName), TRAJ);
 
 		// Apply a FFT bandpass filter to remove all features < 1 pix and > 10 pix in
 		// frequency.
@@ -61,12 +60,11 @@ public class Get_Trajectories implements PlugInFilter {
 		 */
 
 		IJ.selectWindow("walkAv");
-		this.imp = IJ.getImage();
-		imp = this.imp;
-		this.imp.show();
-		this.imp.getWindow().setVisible(true);
-		this.imp.setRoi(new Rectangle(0, 0, this.imp.getWidth(), this.imp.getHeight()));
-		this.imp.unlock();
+		imp = IJ.getImage();
+		imp.show();
+		imp.getWindow().setVisible(true);
+		imp.setRoi(new Rectangle(0, 0, this.imp.getWidth(), this.imp.getHeight()));
+		imp.unlock();
 		if (save)
 			Utils.saveTiff(this.imp, fileDirName + File.separator + "walkAverage.tif", false);
 
@@ -80,31 +78,35 @@ public class Get_Trajectories implements PlugInFilter {
 		rtFit.saveAsPrecise(fileDirName + File.separator + "TableFit_PeakFit.txt", 10);
 
 		// Filter localisations (width and intensity) and build trajectories (distance
-		// and dark time) while plotting them in real time. TODO : in real time.
-		double minIntensity = 200; // 1000;
-		double minSigma = 1.25;
-		double maxSigma = 2.75;
+		// and dark time) while plotting them in real time.
+		ParamAlignTraj selectParams = new ParamAlignTraj(rtFit, imp.getImageStack());
+		selectParams.run();
+
+		double minIntensity = selectParams.params.minIntensity; // 200;
+		double minSigma = selectParams.params.minSigma;// 1.25;
+		double maxSigma = selectParams.params.maxSigma;// 2.75;
 		long startTime = System.nanoTime();
 		rtFit = filterLoc(rtFit, minIntensity, minSigma, maxSigma);
 		rtFit.saveAsPrecise(fileDirName + File.separator + "TableFit_Filtered.txt", 10);
 
-		double maxStepPix = 3;// 1.5;
-		int maxDarkTimeFrame = 4;
-		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, FittingPeakFit.pixelSize);
+		double maxStepPix = selectParams.params.maxStepPix;// 3;
+		int maxDarkTimeFrame = selectParams.params.maxDarkTimeFrame;// 4;
+		int minNumberOfLocPerTraj = selectParams.params.minNumberOfLocPerTraj;// 3;
+		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, minNumberOfLocPerTraj,
+				FittingPeakFit.pixelSize, true);
 
 		plotTrajs(this.imp, trajs);
 		long endTime = System.nanoTime();
 		IJ.log("Elapsed time for trajectory update: " + (endTime - startTime) / 1000000000.0 + " s.");
 
 		// Analyse trajectories...
-		// Link with Align_Trajectories, either by running that second plugin, or making
-		// Get_Trajectories an extension of Align_Trajectories! TODO !
-
-		return DOES_ALL + DOES_STACKS + STACK_REQUIRED;
+		// Link with Align_Trajectories, by making Get_Trajectories an extension of
+		// Align_Trajectories.
+		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
+		analyseTheTracks();
 	}
 
-	private static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma,
-			double maxSigma) {
+	static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma, double maxSigma) {
 		ResultsTableMt rt = new ResultsTableMt();
 		final int SIGMAX = rtFit.getColumnIndex("SigmaX");
 		final int SIGMAY = rtFit.getColumnIndex("SigmaY");
@@ -120,8 +122,8 @@ public class Get_Trajectories implements PlugInFilter {
 		return rt;
 	}
 
-	private ResultsTableMt[] groupInTrajectories(ResultsTableMt rt_Sorted, double maxStepPix, int maxDarkTimeFrame,
-			int pixelSize) {
+	ResultsTableMt[] groupInTrajectories(ResultsTableMt rt_Sorted, double maxStepPix, int maxDarkTimeFrame,
+			int minNumberOfLocPerTraj, int pixelSize, boolean save) {
 
 		// Trajectories: linking the name of the last Loc of each traj to its traj
 		Hashtable<Integer, Traj> trajectories = new Hashtable<Integer, Traj>();
@@ -133,18 +135,19 @@ public class Get_Trajectories implements PlugInFilter {
 		// Build trajectories
 		buildTrajectories(rt_Sorted, maxStepPix, maxDarkTimeFrame, pixelSize, trajectories);
 
-		// Extract trajectories from 'trajectories' into 'retour[2...end]'
-		int minNumberOfLocPerTraj = 3;
+		// Extract trajectories from 'trajectories' into 'retour[2...end]' and into
+		// finalHashMap (from Align_Trajectories ; in a single "SingleCell" cell)
 		ResultsTableMt[] retour = extractAndFilterTrajectories(trajectories, rt_Sorted, minNumberOfLocPerTraj);
 
-		rt_Sorted.saveAsPrecise(fileDirName + File.separator + "TableFit_Sorted.txt", 10);
+		if (save && fileDirName != null)
+			rt_Sorted.saveAsPrecise(fileDirName + File.separator + "TableFit_Sorted.txt", 10);
 
 		return retour;
 	}
 
 	private static double[] buildTrajectories(ResultsTableMt rt_Sorted, double stepPix, int memory, int pixelSize,
 			Hashtable<Integer, Traj> trajectories) {
-		boolean mergeNotEnd = false;// true;// false; //TODO
+		boolean mergeNotEnd = false;// true; //TODO
 		boolean keepClosest = false;
 		boolean keepLongest = !keepClosest;
 
@@ -234,23 +237,22 @@ public class Get_Trajectories implements PlugInFilter {
 				row++;
 			}
 		}
+		IJ.showProgress(endFrame, endFrame);
 
 		return stepHist;
 	}
 
-	private static ResultsTableMt[] extractAndFilterTrajectories(Hashtable<Integer, Traj> trajectories,
+	private ResultsTableMt[] extractAndFilterTrajectories(Hashtable<Integer, Traj> trajectories,
 			ResultsTableMt rt_Sorted, int minNumberOfLocPerTraj) {
 		// Remove all trajectories which count less localisations than
 		// minNumberOfLocPerTraj.
 		Iterator<Entry<Integer, Traj>> it0 = trajectories.entrySet().iterator();
-		int numbTrajIni = trajectories.size();
 		while (it0.hasNext()) {
 			Entry<Integer, Traj> temp = it0.next();
 			if (temp.getValue().list.size() < minNumberOfLocPerTraj) {
 				it0.remove();
 			}
 		}
-		IJ.log("# of trajectories: " + numbTrajIni + " pre-filtering, and " + trajectories.size() + "post-filtering.");
 
 		// Extract the remaining trajectories.
 		ResultsTableMt[] retour = new ResultsTableMt[trajectories.size() + 3];
@@ -259,6 +261,10 @@ public class Get_Trajectories implements PlugInFilter {
 		final int GROUPSIZE_Sorted = rt_Sorted.addNewColumn("GroupSize");
 		groupSizes.incrementCounter();
 		final int GROUPSIZE_groupSizes = groupSizes.addNewColumn("GroupSize");
+
+		finalHashMap = new HashMap<String, CellContainer>();
+		CellContainer allTrajs = new CellContainer(new ResultsTableMt());
+		finalHashMap.put("SingleCell", allTrajs);
 
 		Iterator<Entry<Integer, Traj>> it = trajectories.entrySet().iterator();
 		int traj = 0;
@@ -287,6 +293,8 @@ public class Get_Trajectories implements PlugInFilter {
 				i++;
 			}
 
+			allTrajs.trajTracks.put(traj, retour[traj + 3]);
+
 			traj++;
 		}
 
@@ -294,7 +302,7 @@ public class Get_Trajectories implements PlugInFilter {
 		return retour;
 	}
 
-	private void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
+	static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
 		Overlay ov = new Overlay();
 		ImageCanvas ic = imp.getCanvas();
 		if (ic != null)

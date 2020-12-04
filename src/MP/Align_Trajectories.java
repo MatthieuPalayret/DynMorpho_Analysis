@@ -11,9 +11,9 @@ import ij.gui.Plot;
 
 public class Align_Trajectories extends Analyse_Trajectories {
 
-	private final int CELL = 0, TRAJ = 1;
+	final int CELL = 0, TRAJ = 1;
 	private File[] directorys = new File[2];
-	private HashMap<String, CellContainer> finalHashMap = new HashMap<String, CellContainer>();
+	HashMap<String, CellContainer> finalHashMap = new HashMap<String, CellContainer>();
 	ResultsTableMt trackResults = new ResultsTableMt();
 	private int savePrecision = 6;
 
@@ -71,12 +71,24 @@ public class Align_Trajectories extends Analyse_Trajectories {
 
 		// --------------------
 		// Analyse the tracks
+		analyseTheTracks();
+	}
+
+	public boolean setDirectory(File file, int type) {
+		if (type == CELL || type == TRAJ) {
+			directorys[type] = file;
+			return true;
+		}
+		return false;
+	}
+
+	void analyseTheTracks() {
 		// For each track, calculate the average speed, the speed_x, the directionality
 		// (global displacement / trajectory length), trajectory length, global
 		// displacement, time length, and rear or upfront (cellName and trackNumber)
-		it2 = finalHashMap.keySet().iterator();
-		while (it2.hasNext()) {
-			String cellName = it2.next();
+		Iterator<String> it = finalHashMap.keySet().iterator();
+		while (it.hasNext()) {
+			String cellName = it.next();
 			Iterator<Entry<Integer, ResultsTableMt>> itTracks = finalHashMap.get(cellName).trajTracks.entrySet()
 					.iterator();
 			ResultsTableMt cellTrack = finalHashMap.get(cellName).cellTrack;
