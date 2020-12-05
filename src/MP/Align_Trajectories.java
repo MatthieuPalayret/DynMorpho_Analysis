@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
+import MP.objects.ResultsTableMt;
+import MP.utils.Utils;
 import ij.IJ;
 import ij.gui.Plot;
 

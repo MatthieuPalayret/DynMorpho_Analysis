@@ -15,6 +15,11 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
 import MP.Combine_Imaris_Results.ExcelHolder;
+import MP.objects.Histogram;
+import MP.objects.ResultsTableMt;
+import MP.utils.Parallel;
+import MP.utils.ParallelJDpopulation;
+import MP.utils.Utils;
 import flanagan.analysis.Regression;
 import ij.IJ;
 import ij.gui.Plot;

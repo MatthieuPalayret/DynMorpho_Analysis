@@ -4,12 +4,18 @@ import java.io.File;
 
 import javax.swing.JFileChooser;
 
+import MP.objects.Results;
+import MP.params.ParamPreview;
+import MP.params.ParamVisualisation;
+import MP.params.ParamVisualisationTwoColour;
+import MP.params.Params;
+import MP.utils.Utils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.plugin.Duplicator;
 import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
-public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
+public class Two_Colour_Analysis extends Analyse_Protrusion {
 
 	public Two_Colour_Analysis() {
 		super("");
@@ -81,7 +87,7 @@ public class Two_Colour_Analysis extends Analyse_Protrusion_MP {
 		image = new Duplicator().run(imp, params.channel2, params.channel2, 1, 1, 1, imp.getNFrames());
 		IJ.resetMinAndMax(image);
 		image.show();
-		Analyse_Protrusion_MP channel2_Analysis = new Analyse_Protrusion_MP();
+		Analyse_Protrusion channel2_Analysis = new Analyse_Protrusion();
 		channel2_Analysis.params = params.clone();
 		channel2_Analysis.params.twoColourAnalysis = false;
 		channel2_Analysis.params.greyThreshold = params.greyThreshold2;

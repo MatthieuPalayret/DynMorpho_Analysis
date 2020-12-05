@@ -26,6 +26,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import MP.objects.ResultsTableMt;
 import ij.IJ;
 import ij.plugin.PlugIn;
 

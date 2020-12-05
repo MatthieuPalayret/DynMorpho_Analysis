@@ -15,6 +15,9 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
+import MP.objects.ResultsTableMt;
+import MP.params.Params;
+import MP.utils.Utils;
 import ij.IJ;
 import ij.gui.Plot;
 

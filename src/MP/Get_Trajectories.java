@@ -9,6 +9,12 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map.Entry;
 
+import MP.modifs.WalkingAverageMP;
+import MP.objects.ResultsTableMt;
+import MP.objects.Traj;
+import MP.params.ParamAlignTraj;
+import MP.utils.FittingPeakFit;
+import MP.utils.Utils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
@@ -106,7 +112,8 @@ public class Get_Trajectories extends Align_Trajectories {
 		analyseTheTracks();
 	}
 
-	static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma, double maxSigma) {
+	public static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma,
+			double maxSigma) {
 		ResultsTableMt rt = new ResultsTableMt();
 		final int SIGMAX = rtFit.getColumnIndex("SigmaX");
 		final int SIGMAY = rtFit.getColumnIndex("SigmaY");
@@ -122,7 +129,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		return rt;
 	}
 
-	ResultsTableMt[] groupInTrajectories(ResultsTableMt rt_Sorted, double maxStepPix, int maxDarkTimeFrame,
+	public ResultsTableMt[] groupInTrajectories(ResultsTableMt rt_Sorted, double maxStepPix, int maxDarkTimeFrame,
 			int minNumberOfLocPerTraj, int pixelSize, boolean save) {
 
 		// Trajectories: linking the name of the last Loc of each traj to its traj
@@ -302,7 +309,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		return retour;
 	}
 
-	static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
+	public static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
 		Overlay ov = new Overlay();
 		ImageCanvas ic = imp.getCanvas();
 		if (ic != null)

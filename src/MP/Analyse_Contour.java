@@ -3,6 +3,8 @@ package MP;
 import java.awt.Color;
 import java.io.File;
 
+import MP.objects.ResultsTableMt;
+import MP.utils.Utils;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.Overlay;
@@ -10,7 +12,7 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.FloatPolygon;
 
-public class Analyse_Contour extends Analyse_Protrusion_MP {
+public class Analyse_Contour extends Analyse_Protrusion {
 
 	public Analyse_Contour() {
 		super();
