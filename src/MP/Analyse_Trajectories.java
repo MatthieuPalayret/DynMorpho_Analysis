@@ -14,7 +14,7 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
-import MP.Combine_Imaris_Results.ExcelHolder;
+import MP.Combine_Excell_Results.ExcelHolder;
 import MP.objects.Histogram;
 import MP.objects.ResultsTableMt;
 import MP.utils.Parallel;
@@ -63,7 +63,7 @@ public class Analyse_Trajectories implements PlugIn {
 		directory = new File(path[0] + File.separator + path[1].substring(0, path[1].indexOf(".xls")));
 		directory.mkdir();
 
-		Combine_Imaris_Results cir = new Combine_Imaris_Results();
+		Combine_Excell_Results cir = new Combine_Excell_Results();
 
 		try {
 			ExcelHolder holder = new ExcelHolder(path[0] + File.separator + path[1]);

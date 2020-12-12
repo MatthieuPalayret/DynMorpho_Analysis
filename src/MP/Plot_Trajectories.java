@@ -21,7 +21,7 @@ import MP.utils.Utils;
 import ij.IJ;
 import ij.gui.Plot;
 
-public class Plot_Trajectories extends Combine_Imaris_Results {
+public class Plot_Trajectories extends Combine_Excell_Results {
 
 	/**
 	 * 

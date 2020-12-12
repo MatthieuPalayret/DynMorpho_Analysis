@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.LinkedList;
 
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -906,6 +907,20 @@ public class Utils {
 			return chooser.getSelectedFile().getAbsoluteFile();
 		} else
 			return null;
+	}
+
+	public static LinkedList<File> getFilesInDir(String dirPath, String fileType) {
+		File folder = new File(dirPath);
+		File[] listOfFiles = folder.listFiles();
+		LinkedList<File> list = new LinkedList<File>();
+
+		// Count the number of sub-directories
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if (!listOfFiles[i].isDirectory() && listOfFiles[i].getName().endsWith(fileType))
+				list.add(listOfFiles[i]);
+		}
+
+		return list;
 	}
 
 	public static Color getGradientColor(Color ini, Color fin, int numberOfSteps, int step) {

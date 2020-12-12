@@ -73,7 +73,7 @@ public class Align_Trajectories extends Analyse_Trajectories {
 
 		// --------------------
 		// Analyse the tracks
-		analyseTheTracks();
+		analyseTheTracks(true, true, true, false);
 	}
 
 	public boolean setDirectory(File file, int type) {
@@ -84,7 +84,11 @@ public class Align_Trajectories extends Analyse_Trajectories {
 		return false;
 	}
 
-	void analyseTheTracks() {
+	void analyseTheTracks(boolean newCoord, boolean rearFrontAnalysis, boolean unitsKnown, boolean averageValues) {
+		int Xcoord = newCoord ? ResultsTableMt.X_CENTROID : ResultsTableMt.X;
+		double avgIntensity = 0;
+		double avgSigma = 0;
+
 		// For each track, calculate the average speed, the speed_x, the directionality
 		// (global displacement / trajectory length), trajectory length, global
 		// displacement, time length, and rear or upfront (cellName and trackNumber)
@@ -105,21 +109,31 @@ public class Align_Trajectories extends Analyse_Trajectories {
 						cellRow) < rtTrack.getValueAsDouble(ResultsTableMt.FRAME, 0))
 					cellRow++;
 				if (cellRow < cellTrack.getCounter())
-					if (rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, 0) < cellTrack
-							.getValueAsDouble(ResultsTableMt.X_CENTROID, cellRow))
+					if (rtTrack.getValueAsDouble(Xcoord, 0) < cellTrack.getValueAsDouble(Xcoord, cellRow))
 						type = REAR;
 					else
 						type = UPFRONT;
 
 				for (int row = 1; row < rtTrack.getCounter(); row++) {
 					trajLength += Utils.getDistance(rtTrack, row, row - 1);
+					if (averageValues) {
+						if (row == 1) {
+							avgIntensity += rtTrack.getValueAsDouble(ResultsTableMt.INTENSITY, 0);
+							avgSigma += rtTrack.getValue("SigmaX", 0) + rtTrack.getValue("SigmaY", 0);
+						}
+						avgIntensity += rtTrack.getValueAsDouble(ResultsTableMt.INTENSITY, row);
+						avgSigma += rtTrack.getValue("SigmaX", row) + rtTrack.getValue("SigmaY", row);
+					}
 
 					if (cellRow++ < cellTrack.getCounter())
-						if (rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, row) < cellTrack
-								.getValueAsDouble(ResultsTableMt.X_CENTROID, cellRow))
+						if (rtTrack.getValueAsDouble(Xcoord, row) < cellTrack.getValueAsDouble(Xcoord, cellRow))
 							type = (type == REAR) ? REAR : MIXED;
 						else
 							type = (type == UPFRONT) ? UPFRONT : MIXED;
+				}
+				if (averageValues && rtTrack.getCounter() > 0) {
+					avgIntensity /= (rtTrack.getCounter());
+					avgSigma /= (2.0 * (rtTrack.getCounter()));
 				}
 
 				// For each track, calculate the average speed, the speed_x, the directionality
@@ -128,31 +142,54 @@ public class Align_Trajectories extends Analyse_Trajectories {
 				trackResults.incrementCounter();
 				trackResults.addValue("Origin", cellName);
 				trackResults.addValue(ResultsTableMt.GROUP, entry.getKey());
-				double timeLength = (rtTrack.getValue("Time", rtTrack.getCounter() - 1) - rtTrack.getValue("Time", 0));
-				trackResults.addValue("Speed (µm/s)", trajLength / timeLength);
-				trackResults.addValue("Speed_x (µm/s)",
-						(rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, rtTrack.getCounter() - 1)
-								- rtTrack.getValueAsDouble(ResultsTableMt.X_CENTROID, 0)) / timeLength);
+				double timeLength = (rtTrack.getValue(unitsKnown ? "Time" : "Frame", rtTrack.getCounter() - 1)
+						- rtTrack.getValue(unitsKnown ? "Time" : "Frame", 0));
+				trackResults.addValue("Speed " + (unitsKnown ? "(µm/s)" : "(pix/frame)"), trajLength / timeLength);
+				if (rearFrontAnalysis)
+					trackResults.addValue("Speed_x " + (unitsKnown ? "(µm/s)" : "(pix/frame)"),
+							(rtTrack.getValueAsDouble(Xcoord, rtTrack.getCounter() - 1)
+									- rtTrack.getValueAsDouble(Xcoord, 0)) / timeLength);
 				double globalDisplacement = Utils.getDistance(rtTrack, rtTrack.getCounter() - 1, 0);
+				trackResults.addValue("Global speed " + (unitsKnown ? "(µm/s)" : "(pix/frame)"),
+						globalDisplacement / timeLength);
 				trackResults.addValue("Directionality [0..1]", globalDisplacement / trajLength);
-				trackResults.addValue("Trajectory length (µm)", trajLength);
-				trackResults.addValue("Global displacement (µm)", globalDisplacement);
-				trackResults.addValue("Time length (s)", timeLength);
-				trackResults.addValue("Rear (-1) or upfront (+1)", type);
+				trackResults.addValue("Trajectory length " + (unitsKnown ? "(µm)" : "(pix)"), trajLength);
+				trackResults.addValue("Global displacement " + (unitsKnown ? "(µm)" : "(pix)"), globalDisplacement);
+				trackResults.addValue("Time length " + (unitsKnown ? "(s)" : "(frames)"), timeLength);
+				if (rearFrontAnalysis)
+					trackResults.addValue("Rear (-1) or upfront (+1)", type);
+				if (averageValues) {
+					trackResults.addValue("Average intensity " + (unitsKnown ? "(photons)" : "(a.u.)"), avgIntensity);
+					trackResults.addValue("Average width sigma " + (unitsKnown ? "(µm)" : "(pix)"), avgSigma);
+					trackResults.addValue("Average area " + (unitsKnown ? "(µm²)" : "(pix²)"),
+							(Math.pow(avgSigma, 2) * Math.PI));
+				}
 			}
 		}
 		trackResults.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_Analysis.csv", savePrecision);
 
 		// Output averages and stdev
-		ResultsTableMt rtRear = new ResultsTableMt(), rtUpfront = new ResultsTableMt();
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed (µm/s)");
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed_x (µm/s)");
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Directionality [0..1]");
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Trajectory length (µm)");
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Global displacement (µm)");
-		calculateAvgStdev(trackResults, rtRear, rtUpfront, "Time length (s)");
-		rtRear.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_rear_statistics.csv", savePrecision);
-		rtUpfront.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_upfront_statistics.csv", savePrecision);
+		if (rearFrontAnalysis) {
+			ResultsTableMt rtRear = new ResultsTableMt(), rtUpfront = new ResultsTableMt();
+			calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed " + (unitsKnown ? "(µm/s)" : "(pix/frame)"));
+			calculateAvgStdev(trackResults, rtRear, rtUpfront, "Speed_x " + (unitsKnown ? "(µm/s)" : "(pix/frame)"));
+			calculateAvgStdev(trackResults, rtRear, rtUpfront,
+					"Global speed " + (unitsKnown ? "(µm/s)" : "(pix/frame)"));
+			calculateAvgStdev(trackResults, rtRear, rtUpfront, "Directionality [0..1]");
+			calculateAvgStdev(trackResults, rtRear, rtUpfront, "Trajectory length " + (unitsKnown ? "(µm)" : "(pix)"));
+			calculateAvgStdev(trackResults, rtRear, rtUpfront,
+					"Global displacement " + (unitsKnown ? "(µm)" : "(pix)"));
+			calculateAvgStdev(trackResults, rtRear, rtUpfront, "Time length " + (unitsKnown ? "(s)" : "(frames)"));
+			if (averageValues) {
+				calculateAvgStdev(trackResults, rtRear, rtUpfront,
+						"Average intensity " + (unitsKnown ? "(photons)" : "(a.u.)"));
+				calculateAvgStdev(trackResults, rtRear, rtUpfront,
+						"Average width sigma " + (unitsKnown ? "(µm)" : "(pix)"));
+				calculateAvgStdev(trackResults, rtRear, rtUpfront, "Average area " + (unitsKnown ? "(µm²)" : "(pix²)"));
+			}
+			rtRear.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_rear_statistics.csv", savePrecision);
+			rtUpfront.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_upfront_statistics.csv", savePrecision);
+		}
 	}
 
 	static final int REAR = -1, MIXED = 0, UPFRONT = 1;

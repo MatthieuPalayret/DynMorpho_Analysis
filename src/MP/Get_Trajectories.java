@@ -13,6 +13,7 @@ import MP.modifs.WalkingAverageMP;
 import MP.objects.ResultsTableMt;
 import MP.objects.Traj;
 import MP.params.ParamAlignTraj;
+import MP.params.Params;
 import MP.utils.FittingPeakFit;
 import MP.utils.Utils;
 import ij.IJ;
@@ -37,14 +38,21 @@ public class Get_Trajectories extends Align_Trajectories {
 
 	@Override
 	public void run(String arg0) {
+		IJ.log("MP plugin v." + Params.version);
+
 		imp = IJ.getImage();
 		if (imp == null) {
 			IJ.log("Please open an movie of the cells to be analysed before running the Get_Trajectories plugin.");
 			return;
 		}
 		fileDirName = imp.getOriginalFileInfo().directory;
-		if (fileDirName == null || fileDirName == "")
+		String fileName = imp.getOriginalFileInfo().fileName;
+		if (fileDirName == null || fileDirName == "" || fileName == null || fileName == ""
+				|| imp.getOriginalFileInfo().fileName.lastIndexOf(".tif") == -1)
 			fileDirName = Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
+		else
+			fileDirName = fileDirName + File.separator + fileName.substring(0, fileName.lastIndexOf(".tif"))
+					+ "_GetTrajectories";
 		setDirectory(new File(fileDirName), TRAJ);
 
 		// Apply a FFT bandpass filter to remove all features < 1 pix and > 10 pix in
@@ -91,9 +99,9 @@ public class Get_Trajectories extends Align_Trajectories {
 		double minIntensity = selectParams.params.minIntensity; // 200;
 		double minSigma = selectParams.params.minSigma;// 1.25;
 		double maxSigma = selectParams.params.maxSigma;// 2.75;
+		selectParams.params.save(fileDirName);
 		long startTime = System.nanoTime();
 		rtFit = filterLoc(rtFit, minIntensity, minSigma, maxSigma);
-		rtFit.saveAsPrecise(fileDirName + File.separator + "TableFit_Filtered.txt", 10);
 
 		double maxStepPix = selectParams.params.maxStepPix;// 3;
 		int maxDarkTimeFrame = selectParams.params.maxDarkTimeFrame;// 4;
@@ -109,7 +117,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		// Link with Align_Trajectories, by making Get_Trajectories an extension of
 		// Align_Trajectories.
 		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
-		analyseTheTracks();
+		analyseTheTracks(false, false, false, true);
 	}
 
 	public static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma,

@@ -27,12 +27,12 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import MP.objects.ResultsTableMt;
 import ij.IJ;
 
-public class Combine_Imaris_Results extends Combine_Results {
-	public Combine_Imaris_Results() {
+public class Combine_Excell_Results extends Combine_Protrusion_Results {
+	public Combine_Excell_Results() {
 		super("Imaris file", JFileChooser.FILES_ONLY);
 	}
 
-	public Combine_Imaris_Results(String title, int fileChooserType) {
+	public Combine_Excell_Results(String title, int fileChooserType) {
 		super(title, fileChooserType);
 	}
 
@@ -56,27 +56,38 @@ public class Combine_Imaris_Results extends Combine_Results {
 			String pathFile = resultList.get(i);
 			IJ.log("Combining results from file: " + pathFile);
 
-			try {
-				ExcelHolder holder = new ExcelHolder(pathFile);
-				if (holder.excelFile.exists()) {
-					holder.fileIn = new FileInputStream(holder.excelFile);
-					holder.wb = WorkbookFactory.create(holder.fileIn);
-					Iterator<Sheet> itSheet = holder.wb.sheetIterator();
-					while (itSheet.hasNext()) {
-						String sheetName = itSheet.next().getSheetName();
-						addToResults(holder, sheetName);
-					}
-				}
-
-				// Close the Excel file
-				closeExcelHolder(holder);
-			} catch (EncryptedDocumentException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
+			addXLSFile(pathFile);
 		}
 
+		String resultPath = resultList.get(0);
+		String pathFile = resultPath.substring(0, resultPath.lastIndexOf(File.separatorChar)) + File.separator
+				+ "CombinedResults.xls";
+		writeAndCloseTheCombinedXLSFile(pathFile);
+	}
+
+	public void addXLSFile(String pathFile) {
+		try {
+			ExcelHolder holder = new ExcelHolder(pathFile);
+			if (holder.excelFile.exists()) {
+				holder.fileIn = new FileInputStream(holder.excelFile);
+				holder.wb = WorkbookFactory.create(holder.fileIn);
+				Iterator<Sheet> itSheet = holder.wb.sheetIterator();
+				while (itSheet.hasNext()) {
+					String sheetName = itSheet.next().getSheetName();
+					addToResults(holder, sheetName);
+				}
+			}
+
+			// Close the Excel file
+			closeExcelHolder(holder);
+		} catch (EncryptedDocumentException | IOException e) {
+			// TODO Auto-generated catch block
+			IJ.log("The file " + pathFile + " is not a correct Excell .xls file.");
+			e.printStackTrace();
+		}
+	}
+
+	public void writeAndCloseTheCombinedXLSFile(String pathFile) {
 		ExcelHolder holder = null;
 		boolean firstRound = true;
 
@@ -90,9 +101,7 @@ public class Combine_Imaris_Results extends Combine_Results {
 			// new fresh one)
 			if (firstRound) {
 				firstRound = false;
-				String resultPath = resultList.get(0);
-				holder = newExcelHolder(resultPath.substring(0, resultPath.lastIndexOf(File.separatorChar))
-						+ File.separator + "CombinedResults.xls", sheetName);
+				holder = newExcelHolder(pathFile, sheetName);
 			}
 			// Create a new sheet
 			Sheet sheet = openExcelSheet(holder, sheetName);

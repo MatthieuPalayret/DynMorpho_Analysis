@@ -11,6 +11,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.File;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -64,6 +65,21 @@ public class ParamAlignTraj extends JFrame
 					|| (comp.maxSigma == this.maxSigma) || (comp.maxStepPix == this.maxStepPix)
 					|| (comp.maxDarkTimeFrame == this.maxDarkTimeFrame)
 					|| (comp.minNumberOfLocPerTraj == this.minNumberOfLocPerTraj);
+		}
+
+		public ResultsTableMt save(String dirPath) {
+			ResultsTableMt rt = new ResultsTableMt();
+			rt.incrementCounter();
+			rt.addValue("Minimal intensity (a.u.)", minIntensity);
+			rt.addValue("Minimal width sigma (pix.)", minSigma);
+			rt.addValue("Maximal width sigma (pix.)", maxSigma);
+			rt.addValue("Maximal distance between fits (pix.)", maxStepPix);
+			rt.addValue("Maximal dark time (frames)", maxDarkTimeFrame);
+			rt.addValue("Reject trajectory w/ fewer than (fits)", minNumberOfLocPerTraj);
+
+			rt.saveAsPrecise(dirPath + File.separator + "parameters_AlignTrajectories.txt", 3);
+
+			return rt;
 		}
 	}
 
@@ -219,7 +235,7 @@ public class ParamAlignTraj extends JFrame
 		txtMinSigma.addActionListener(this);
 		txtMinSigma.addFocusListener(this);
 
-		lblMaxSigma = new JLabel("Minimal width \u03C3 (pix.):");
+		lblMaxSigma = new JLabel("Maximal width \u03C3 (pix.):");
 		lblMaxSigma.setFont(font);
 		GridBagConstraints gbc_lblMaxSigma = new GridBagConstraints();
 		gbc_lblMaxSigma.anchor = GridBagConstraints.EAST;

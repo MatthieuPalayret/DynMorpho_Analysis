@@ -300,7 +300,10 @@ public class ResultsTableMt extends ResultsTable {
 		to.incrementCounter();
 		for (int column = 0; column <= from.getLastColumn(); column++) {
 			if (from.columnExists(column) && from.getColumnHeading(column) != null)
-				to.addValue(from.getColumnHeading(column), from.getValueAsDouble(column, row));
+				if (Double.isNaN(from.getValueAsDouble(column, row)))
+					to.addValue(from.getColumnHeading(column), from.getStringValue(column, row));
+				else
+					to.addValue(from.getColumnHeading(column), from.getValueAsDouble(column, row));
 		}
 	}
 
