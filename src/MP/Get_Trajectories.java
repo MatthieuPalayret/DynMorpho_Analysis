@@ -109,7 +109,9 @@ public class Get_Trajectories extends Align_Trajectories {
 		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, minNumberOfLocPerTraj,
 				FittingPeakFit.pixelSize, true);
 
-		plotTrajs(this.imp, trajs);
+		ResultsTableMt avgTrajDirections = calculateAvgTrajDirection(trajs, imp.getImageStackSize(), true);
+
+		plotTrajs(this.imp, trajs, avgTrajDirections);
 		long endTime = System.nanoTime();
 		IJ.log("Elapsed time for trajectory update: " + (endTime - startTime) / 1000000000.0 + " s.");
 
@@ -118,6 +120,48 @@ public class Get_Trajectories extends Align_Trajectories {
 		// Align_Trajectories.
 		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
 		analyseTheTracks(false, false, false, true);
+	}
+
+	public ResultsTableMt calculateAvgTrajDirection(ResultsTableMt[] trajs, int frameNumber, boolean save) {
+		// For each frame, list the directions (vectors) of all the trajectories in it
+		ResultsTableMt[] trajDirections = new ResultsTableMt[frameNumber - 1];
+		// Initiate the object
+		for (int fr = 0; fr < trajDirections.length; fr++) {
+			trajDirections[fr] = new ResultsTableMt();
+		}
+		// Populate the object
+		for (int traj = 3; traj < trajs.length; traj++) {
+			for (int row = 0; row < trajs[traj].getCounter() - 1; row++) {
+				int fr = (int) trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row);
+				trajDirections[fr].incrementCounter();
+				trajDirections[fr].addValue(ResultsTableMt.X, trajs[traj].getValueAsDouble(ResultsTableMt.X, row + 1)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.X, row));
+				trajDirections[fr].addValue(ResultsTableMt.Y, trajs[traj].getValueAsDouble(ResultsTableMt.Y, row + 1)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.Y, row));
+			}
+		}
+		ResultsTableMt avgTrajDirections = new ResultsTableMt();
+		for (int fr = 0; fr < trajDirections.length; fr++) {
+			avgTrajDirections.incrementCounter();
+			avgTrajDirections.addValue(ResultsTableMt.FRAME, fr);
+			double[] meanX = MP.utils.Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.X, true);
+			if (meanX != null) {
+				avgTrajDirections.addValue(ResultsTableMt.X, meanX[0]);
+				avgTrajDirections.addValue("Stdev_X", meanX[1]);
+			}
+			double[] meanY = MP.utils.Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.Y, true);
+			if (meanY != null) {
+				avgTrajDirections.addValue(ResultsTableMt.Y, meanY[0]);
+				avgTrajDirections.addValue("Stdev_Y", meanY[1]);
+			}
+			avgTrajDirections.addValue("#ofTrajs", trajDirections[fr].getCounter());
+		}
+
+		if (save) {
+			avgTrajDirections.saveAsPrecise(fileDirName + File.separator + "AvgTrajectory.txt", 10);
+		}
+
+		return avgTrajDirections;
 	}
 
 	public static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma,
@@ -154,15 +198,48 @@ public class Get_Trajectories extends Align_Trajectories {
 		// finalHashMap (from Align_Trajectories ; in a single "SingleCell" cell)
 		ResultsTableMt[] retour = extractAndFilterTrajectories(trajectories, rt_Sorted, minNumberOfLocPerTraj);
 
-		if (save && fileDirName != null)
+		if (save && fileDirName != null) {
 			rt_Sorted.saveAsPrecise(fileDirName + File.separator + "TableFit_Sorted.txt", 10);
+
+			// Save all trajectories in a single .xls file on consecutive triplets of
+			// columns [frame_traj_# x_traj_# y_traj_#]
+			ResultsTableMt saveTraj = new ResultsTableMt();
+			String columnFrame0 = "Frame_Traj_";
+			String columnX0 = "X_Traj_";
+			String columnY0 = "Y_Traj_";
+			int tableCounter = 1;
+
+			for (int traj = 0; traj < retour.length - 3; traj++) {
+				String columnFrame = columnFrame0 + traj;
+				String columnX = columnX0 + traj;
+				String columnY = columnY0 + traj;
+
+				// A ResultsTable cannot contain more than 150 columns, so results are split
+				if (traj % 40 == 0 && traj > 0) {
+					saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories-"
+							+ ((tableCounter - 1) * 40) + "-" + ((tableCounter) * 40 - 1) + ".xls", 10);
+					tableCounter++;
+					saveTraj = new ResultsTableMt();
+				}
+
+				for (int row = 0; row < retour[traj + 3].getCounter(); row++) {
+					while (saveTraj.getCounter() - 1 < row)
+						saveTraj.addRow();
+					saveTraj.setValue(columnFrame, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.FRAME, row));
+					saveTraj.setValue(columnX, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.X, row));
+					saveTraj.setValue(columnY, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.Y, row));
+				}
+			}
+			saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories.xls-" + +((tableCounter - 1) * 40)
+					+ "-" + (retour.length - 4) + ".xls", 10);
+		}
 
 		return retour;
 	}
 
 	private static double[] buildTrajectories(ResultsTableMt rt_Sorted, double stepPix, int memory, int pixelSize,
 			Hashtable<Integer, Traj> trajectories) {
-		boolean mergeNotEnd = false;// true; //TODO
+		boolean mergeNotEnd = true;// false; //TODO
 		boolean keepClosest = false;
 		boolean keepLongest = !keepClosest;
 
@@ -317,7 +394,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		return retour;
 	}
 
-	public static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
+	public static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs, ResultsTableMt avgTrajDirections) {
 		Overlay ov = new Overlay();
 		ImageCanvas ic = imp.getCanvas();
 		if (ic != null)
@@ -366,8 +443,74 @@ public class Get_Trajectories extends Align_Trajectories {
 			}
 		}
 
+		if (avgTrajDirections != null)
+			plotTheAvgTrajectory(imp, trajs, avgTrajDirections, ov);
+
 		imp.setHideOverlay(false);
 		imp.draw();
+	}
+
+	public static void plotTrajs(ImagePlus imp, ResultsTableMt[] trajs) {
+		plotTrajs(imp, trajs, null);
+	}
+
+	private static void plotTheAvgTrajectory(ImagePlus imp, ResultsTableMt[] trajs, ResultsTableMt avgTrajDirections,
+			Overlay ov) {
+		// PLOT THE AVERAGE TRAJECTORY
+		// Get the initialise estimated position of the cell (average positions of all
+		// trajectories in the first frame)
+		double x0 = 0;
+		double y0 = 0;
+		int trajNumber = 0;
+		for (int traj = 3; traj < trajs.length; traj++) {
+			if (trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, 0) == 1) {
+				x0 += trajs[traj].getValueAsDouble(ResultsTableMt.X, 0);
+				y0 += trajs[traj].getValueAsDouble(ResultsTableMt.Y, 0);
+				trajNumber++;
+			}
+		}
+		if (trajNumber > 0) {
+			x0 /= (trajNumber);
+			y0 /= (trajNumber);
+		}
+
+		// TODO Plot the average trajectory in a different window, in black
+		// Plot (in transparency) below all the superposed trajectories, color-coded
+		// with their stdev to the avg
+
+		// Plot the average trajectory of the fitted trajectories, colour-coding it with
+		// its stdev
+		double xTemp = x0;
+		double yTemp = y0;
+		for (int fr = 0; fr < imp.getImageStackSize(); fr++) {
+			xTemp += ((fr > 0) ? avgTrajDirections.getValueAsDouble(ResultsTableMt.X, fr - 1) : 0);
+			yTemp += ((fr > 0) ? avgTrajDirections.getValueAsDouble(ResultsTableMt.Y, fr - 1) : 0);
+
+			FloatPolygon pol = new FloatPolygon();
+			PointRoi roiDot = new PointRoi(xTemp, yTemp);
+
+			double x1Temp = x0;
+			double y1Temp = y0;
+			for (int frLower = 0; frLower <= fr; frLower++) {
+				pol.addPoint(x1Temp, y1Temp);
+				if (frLower < avgTrajDirections.getCounter()) {
+					x1Temp += avgTrajDirections.getValueAsDouble(ResultsTableMt.X, frLower);
+					y1Temp += avgTrajDirections.getValueAsDouble(ResultsTableMt.Y, frLower);
+				}
+			}
+
+			PolygonRoi polRoi = new PolygonRoi(pol, Roi.POLYLINE);
+			polRoi.setStrokeColor(Color.BLUE);
+			polRoi.setStrokeWidth(1.5);
+			polRoi.setPosition(fr + 1);
+
+			roiDot.setStrokeColor(Color.BLUE);
+			roiDot.setPosition(fr + 1);
+			roiDot.setPointType(3);
+
+			ov.add(polRoi);
+			ov.add(roiDot);
+		}
 	}
 
 }

@@ -559,6 +559,17 @@ public class Utils {
 		return getMeanAndStdev(rt, x0, false);
 	}
 
+	public static double[] getMeanAndStdev(ResultsTableMt rt, int x0) {
+		return getMeanAndStdev(rt, x0, false);
+	}
+
+	public static double[] getMeanAndStdev(ResultsTableMt rt, int x0, boolean dontCountZeros) {
+		if (rt.getColumnHeading(x0) != null)
+			return getMeanAndStdev(rt.getColumnAsDoubles(x0), dontCountZeros);
+		else
+			return null;
+	}
+
 	public static double[] getMeanAndStdev(ResultsTableMt rt, String x0, boolean dontCountZeros) {
 		if (rt.getColumnIndex(x0) != -1)
 			return getMeanAndStdev(rt.getColumnAsDoubles(rt.getColumnIndex(x0)), dontCountZeros);
