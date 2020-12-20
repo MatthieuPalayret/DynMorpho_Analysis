@@ -41,6 +41,16 @@ public class Analyse_Trajectories implements PlugIn {
 	public Analyse_Trajectories() {
 	}
 
+	public Analyse_Trajectories(double stepUM, double exposure, double[][] xYMaxMin) {
+		this.stepUM = stepUM;
+		this.exposure = exposure;
+		if (xYMaxMin.length != 2 || (xYMaxMin[0].length != 2 && xYMaxMin[0].length != 5)
+				|| (xYMaxMin[1].length != 2 && xYMaxMin[1].length != 5)) {
+			IJ.log("Warning: there is an error of dimension when populating xYMaxMin in an Analyse_Trajectories object!");
+		}
+		this.xYMaxMin = xYMaxMin;
+	}
+
 	@Override
 	public void run(String arg0) {
 		extractTrajectories();
@@ -248,8 +258,8 @@ public class Analyse_Trajectories implements PlugIn {
 
 	}
 
-	private void populationJD_Analysis(boolean saveTextFile) { // Fill cumulJD with other time steps (1 ..
-																// highestTimeStep)
+	protected void populationJD_Analysis(boolean saveTextFile) { // Fill cumulJD with other time steps (1 ..
+																	// highestTimeStep)
 		int highestTimeStep = 11; // TODO
 
 		// Get JD back from each stepFrame's diffusion coefficient

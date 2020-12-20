@@ -18,6 +18,7 @@ public class Align_Trajectories extends Analyse_Trajectories {
 	HashMap<String, CellContainer> finalHashMap = new HashMap<String, CellContainer>();
 	ResultsTableMt trackResults = new ResultsTableMt();
 	private int savePrecision = 6;
+	double[] stdev = null;
 
 	public Align_Trajectories() {
 	}
@@ -164,6 +165,11 @@ public class Align_Trajectories extends Analyse_Trajectories {
 					trackResults.addValue("Average area " + (unitsKnown ? "(µm²)" : "(pix²)"),
 							(Math.pow(avgSigma, 2) * Math.PI));
 				}
+				if (stdev != null && entry.getKey() < stdev.length) {
+					trackResults.addValue(
+							"Standard deviation from average trajectory " + (unitsKnown ? "(µm)" : "(pix)"),
+							stdev[entry.getKey()]);
+				}
 			}
 		}
 		trackResults.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_Analysis.csv", savePrecision);
@@ -186,6 +192,10 @@ public class Align_Trajectories extends Analyse_Trajectories {
 				calculateAvgStdev(trackResults, rtRear, rtUpfront,
 						"Average width sigma " + (unitsKnown ? "(µm)" : "(pix)"));
 				calculateAvgStdev(trackResults, rtRear, rtUpfront, "Average area " + (unitsKnown ? "(µm²)" : "(pix²)"));
+			}
+			if (stdev != null) {
+				calculateAvgStdev(trackResults, rtRear, rtUpfront,
+						"Standard deviation from average trajectory " + (unitsKnown ? "(µm)" : "(pix)"));
 			}
 			rtRear.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_rear_statistics.csv", savePrecision);
 			rtUpfront.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_upfront_statistics.csv", savePrecision);

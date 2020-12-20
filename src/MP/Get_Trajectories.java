@@ -20,6 +20,7 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 import ij.gui.Overlay;
+import ij.gui.Plot;
 import ij.gui.PointRoi;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
@@ -31,6 +32,7 @@ public class Get_Trajectories extends Align_Trajectories {
 	int frame;
 	String fileDirName;
 	boolean save = false;
+	private boolean complexSavedTrajectories = false;
 
 	public Get_Trajectories() {
 		// TODO Auto-generated constructor stub
@@ -120,6 +122,11 @@ public class Get_Trajectories extends Align_Trajectories {
 		// Align_Trajectories.
 		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
 		analyseTheTracks(false, false, false, true);
+
+		IJ.log("Beginning the MSD and JD analysis...");
+		diffusionAnalysis(trajs, rtFit, minNumberOfLocPerTraj);
+		endTime = System.nanoTime();
+		IJ.log("All done! - " + (endTime - startTime) / 1000000000.0 + " s.");
 	}
 
 	public ResultsTableMt calculateAvgTrajDirection(ResultsTableMt[] trajs, int frameNumber, boolean save) {
@@ -132,7 +139,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		// Populate the object
 		for (int traj = 3; traj < trajs.length; traj++) {
 			for (int row = 0; row < trajs[traj].getCounter() - 1; row++) {
-				int fr = (int) trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row);
+				int fr = (int) trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row) - 1;
 				trajDirections[fr].incrementCounter();
 				trajDirections[fr].addValue(ResultsTableMt.X, trajs[traj].getValueAsDouble(ResultsTableMt.X, row + 1)
 						- trajs[traj].getValueAsDouble(ResultsTableMt.X, row));
@@ -143,13 +150,13 @@ public class Get_Trajectories extends Align_Trajectories {
 		ResultsTableMt avgTrajDirections = new ResultsTableMt();
 		for (int fr = 0; fr < trajDirections.length; fr++) {
 			avgTrajDirections.incrementCounter();
-			avgTrajDirections.addValue(ResultsTableMt.FRAME, fr);
-			double[] meanX = MP.utils.Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.X, true);
+			avgTrajDirections.addValue(ResultsTableMt.FRAME, fr + 1);
+			double[] meanX = Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.X, true);
 			if (meanX != null) {
 				avgTrajDirections.addValue(ResultsTableMt.X, meanX[0]);
 				avgTrajDirections.addValue("Stdev_X", meanX[1]);
 			}
-			double[] meanY = MP.utils.Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.Y, true);
+			double[] meanY = Utils.getMeanAndStdev(trajDirections[fr], ResultsTableMt.Y, true);
 			if (meanY != null) {
 				avgTrajDirections.addValue(ResultsTableMt.Y, meanY[0]);
 				avgTrajDirections.addValue("Stdev_Y", meanY[1]);
@@ -160,6 +167,101 @@ public class Get_Trajectories extends Align_Trajectories {
 		if (save) {
 			avgTrajDirections.saveAsPrecise(fileDirName + File.separator + "AvgTrajectory.txt", 10);
 		}
+
+		// Plot the average trajectory in a different window, in black
+		// Plot below all the superposed trajectories, colour-coded with their stdev to
+		// the avg
+		double[][][] pols = new double[trajs.length - 3][][];
+
+		// Determine the avgTraj
+		double[][] avgPol = new double[2][];
+		avgPol[0] = new double[trajDirections.length + 1];
+		avgPol[1] = new double[avgPol[0].length];
+		avgPol[0][0] = 0;
+		avgPol[1][0] = 0;
+		for (int fr = 1; fr < avgPol[0].length; fr++) {
+			avgPol[0][fr] = avgPol[0][fr - 1] + avgTrajDirections.getValueAsDouble(ResultsTableMt.X, fr - 1);
+			avgPol[1][fr] = avgPol[1][fr - 1] + avgTrajDirections.getValueAsDouble(ResultsTableMt.Y, fr - 1);
+		}
+		// Initialise pols
+		for (int i = 0; i < pols.length; i++) {
+			pols[i] = new double[2][];
+			pols[i][0] = avgPol[0].clone();
+			pols[i][1] = avgPol[1].clone();
+		}
+		// Fill pols: for each trajectory, with avgTraj before the trajectory begins,
+		// then with the trajectory, and with the final value of the trajectory after it
+		// ends.
+		// At the same time, calculate the Stdev of each traj to the avgPol
+		double[] stdev = new double[pols.length];
+		for (int traj = 3; traj < trajs.length; traj++) {
+			int frame = 0;
+			for (int row = 1; row < trajs[traj].getCounter(); row++) {
+				frame = (int) trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row) - 1;
+				double xDiff = trajs[traj].getValueAsDouble(ResultsTableMt.X, row)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.X, row - 1);
+				pols[traj - 3][0][frame] = pols[traj - 3][0][frame - 1] + xDiff;
+				double yDiff = trajs[traj].getValueAsDouble(ResultsTableMt.Y, row)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.Y, row - 1);
+				pols[traj - 3][1][frame] = pols[traj - 3][1][frame - 1] + yDiff;
+
+				stdev[traj - 3] += Math.pow(xDiff - avgTrajDirections.getValueAsDouble(ResultsTableMt.X, frame - 1), 2)
+						+ Math.pow(yDiff - avgTrajDirections.getValueAsDouble(ResultsTableMt.Y, frame - 1), 2);
+
+				frame++;
+				while ((row + 1 < trajs[traj].getCounter()
+						&& frame < trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row + 1) - 1)
+						|| (row + 1 == trajs[traj].getCounter() && frame < pols[traj - 3][0].length)) {
+					pols[traj - 3][0][frame] = pols[traj - 3][0][frame - 1];
+					pols[traj - 3][1][frame] = pols[traj - 3][1][frame - 1];
+					frame++;
+				}
+			}
+			stdev[traj - 3] = Math.sqrt(stdev[traj - 3] / (trajs[traj].getCounter() - 1.0));
+		}
+		// Calculate the limits of the plots
+		double xMax = 0;
+		double yMax = 0;
+		for (int i = 0; i < pols.length; i++) {
+			double[] temp = Utils.getMinMax(pols[i][0]);
+			xMax = Math.max(xMax, Math.max(-temp[0], temp[1]));
+			temp = Utils.getMinMax(pols[i][1]);
+			yMax = Math.max(yMax, Math.max(-temp[0], temp[1]));
+		}
+		double limit = ((int) (Math.max(xMax, yMax) / 5.0) + 1) * 5;
+
+		// Plot the cumulative trajectories
+		Plot plot = new Plot("Detected trajectories", "x (pixel)", "y (pixel)");
+		plot.setLimits(-limit, limit, -limit, limit);
+		plot.setSize(700, 700);
+		for (int frame = 1; frame < avgPol[0].length; frame++) {
+			IJ.showStatus("Plotting trajectory directions");
+			IJ.showProgress(frame, avgPol[0].length);
+
+			double maxStdev = Utils.getMax(stdev);
+			plot.setLineWidth(1);
+			for (int traj = 0; traj < pols.length; traj++) {
+				plot.setColor(
+						Utils.getGradientColor(Color.GREEN, Color.RED, 100, (int) (stdev[traj] / maxStdev * 100.0)));
+				for (int frameBelow = Math.max(1, frame - 10); frameBelow <= frame; frameBelow++) {
+					if (pols[traj][0][frameBelow - 1] != pols[traj][0][frameBelow]
+							|| pols[traj][1][frameBelow - 1] != pols[traj][1][frameBelow])
+						plot.drawLine(pols[traj][0][frameBelow - 1], pols[traj][1][frameBelow - 1],
+								pols[traj][0][frameBelow], pols[traj][1][frameBelow]);
+				}
+			}
+			plot.setColor(Color.BLACK);
+			plot.setLineWidth(2);
+			for (int frameBelow = 1; frameBelow <= frame; frameBelow++) {
+				plot.drawLine(avgPol[0][frameBelow - 1], avgPol[1][frameBelow - 1], avgPol[0][frameBelow],
+						avgPol[1][frameBelow]);
+			}
+			plot.addToStack();
+		}
+
+		plot.show();
+		Utils.saveTiff(plot.getImagePlus(), fileDirName + File.separator + "AvgTrajectory.tiff", false);
+		this.stdev = stdev;
 
 		return avgTrajDirections;
 	}
@@ -201,37 +303,43 @@ public class Get_Trajectories extends Align_Trajectories {
 		if (save && fileDirName != null) {
 			rt_Sorted.saveAsPrecise(fileDirName + File.separator + "TableFit_Sorted.txt", 10);
 
-			// Save all trajectories in a single .xls file on consecutive triplets of
-			// columns [frame_traj_# x_traj_# y_traj_#]
-			ResultsTableMt saveTraj = new ResultsTableMt();
-			String columnFrame0 = "Frame_Traj_";
-			String columnX0 = "X_Traj_";
-			String columnY0 = "Y_Traj_";
-			int tableCounter = 1;
+			Utils.sortRt(rt_Sorted, ResultsTableMt.GROUP)
+					.saveAsPrecise(fileDirName + File.separator + "Table_Trajectories.txt", 10);
 
-			for (int traj = 0; traj < retour.length - 3; traj++) {
-				String columnFrame = columnFrame0 + traj;
-				String columnX = columnX0 + traj;
-				String columnY = columnY0 + traj;
+			if (complexSavedTrajectories) {
+				// Save all trajectories in a single .csv file on consecutive triplets of
+				// columns [frame_traj_# x_traj_# y_traj_#]
+				ResultsTableMt saveTraj = new ResultsTableMt();
+				String columnFrame0 = "Frame_Traj_";
+				String columnX0 = "X_Traj_";
+				String columnY0 = "Y_Traj_";
+				int tableCounter = 1;
 
-				// A ResultsTable cannot contain more than 150 columns, so results are split
-				if (traj % 40 == 0 && traj > 0) {
-					saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories-"
-							+ ((tableCounter - 1) * 40) + "-" + ((tableCounter) * 40 - 1) + ".xls", 10);
-					tableCounter++;
-					saveTraj = new ResultsTableMt();
+				for (int traj = 0; traj < retour.length - 3; traj++) {
+					String columnFrame = columnFrame0 + traj;
+					String columnX = columnX0 + traj;
+					String columnY = columnY0 + traj;
+
+					// A ResultsTable cannot contain more than 150 columns, so results are split
+					if (traj % 40 == 0 && traj > 0) {
+						saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories-"
+								+ ((tableCounter - 1) * 40) + "-" + ((tableCounter) * 40 - 1) + ".csv", 10);
+						tableCounter++;
+						saveTraj = new ResultsTableMt();
+					}
+
+					for (int row = 0; row < retour[traj + 3].getCounter(); row++) {
+						while (saveTraj.getCounter() - 1 < row)
+							saveTraj.addRow();
+						saveTraj.setValue(columnFrame, row,
+								retour[traj + 3].getValueAsDouble(ResultsTableMt.FRAME, row));
+						saveTraj.setValue(columnX, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.X, row));
+						saveTraj.setValue(columnY, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.Y, row));
+					}
 				}
-
-				for (int row = 0; row < retour[traj + 3].getCounter(); row++) {
-					while (saveTraj.getCounter() - 1 < row)
-						saveTraj.addRow();
-					saveTraj.setValue(columnFrame, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.FRAME, row));
-					saveTraj.setValue(columnX, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.X, row));
-					saveTraj.setValue(columnY, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.Y, row));
-				}
+				saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories-" + +((tableCounter - 1) * 40)
+						+ "-" + (retour.length - 4) + ".csv", 10);
 			}
-			saveTraj.saveAsPrecise(fileDirName + File.separator + "ListOfTrajectories.xls-" + +((tableCounter - 1) * 40)
-					+ "-" + (retour.length - 4) + ".xls", 10);
 		}
 
 		return retour;
@@ -443,8 +551,8 @@ public class Get_Trajectories extends Align_Trajectories {
 			}
 		}
 
-		if (avgTrajDirections != null)
-			plotTheAvgTrajectory(imp, trajs, avgTrajDirections, ov);
+		// if (avgTrajDirections != null)
+		// plotTheAvgTrajectory(imp, trajs, avgTrajDirections, ov);
 
 		imp.setHideOverlay(false);
 		imp.draw();
@@ -473,10 +581,6 @@ public class Get_Trajectories extends Align_Trajectories {
 			x0 /= (trajNumber);
 			y0 /= (trajNumber);
 		}
-
-		// TODO Plot the average trajectory in a different window, in black
-		// Plot (in transparency) below all the superposed trajectories, color-coded
-		// with their stdev to the avg
 
 		// Plot the average trajectory of the fitted trajectories, colour-coding it with
 		// its stdev
@@ -511,6 +615,26 @@ public class Get_Trajectories extends Align_Trajectories {
 			ov.add(polRoi);
 			ov.add(roiDot);
 		}
+	}
+
+	public void diffusionAnalysis(ResultsTableMt[] trajs, ResultsTableMt rt, int minNumberOfLocPerTraj) {
+		double[][] xYMaxMin = new double[2][];
+		xYMaxMin[0] = Utils.maxMin(rt.getColumnAsDoubles(ResultsTableMt.X));
+		xYMaxMin[1] = Utils.maxMin(rt.getColumnAsDoubles(ResultsTableMt.Y));
+
+		Analyse_Trajectories analysis = new Analyse_Trajectories(0.1, 0.1, xYMaxMin); // 1 frame = 0.1 s ; 1 pix = 0.1
+																						// µm. //TODO
+		analysis.directory = new File(fileDirName);
+
+		// Populate hashMapRt
+		analysis.hashMapRt = new HashMap<Integer, ResultsTableMt>();
+		for (int traj = 0; traj < trajs.length - 3; traj++) {
+			analysis.hashMapRt.put(traj, trajs[traj + 3]);
+		}
+
+		analysis.msd_Analysis(true, 10, minNumberOfLocPerTraj);
+
+		analysis.populationJD_Analysis(saveTextFile);
 	}
 
 }
