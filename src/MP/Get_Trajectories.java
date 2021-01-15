@@ -47,15 +47,20 @@ public class Get_Trajectories extends Align_Trajectories {
 			IJ.log("Please open an movie of the cells to be analysed before running the Get_Trajectories plugin.");
 			return;
 		}
-		fileDirName = imp.getOriginalFileInfo().directory;
-		String fileName = imp.getOriginalFileInfo().fileName;
-		if (fileDirName == null || fileDirName == "" || fileName == null || fileName == ""
-				|| imp.getOriginalFileInfo().fileName.lastIndexOf(".tif") == -1)
-			fileDirName = Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
-		else
-			fileDirName = fileDirName + File.separator + fileName.substring(0, fileName.lastIndexOf(".tif"))
-					+ "_GetTrajectories";
+		// Nora prefers always being asked where to save the processed files...
+		/**
+		 * fileDirName = imp.getOriginalFileInfo().directory; String fileName =
+		 * imp.getOriginalFileInfo().fileName; if (fileDirName == null || fileDirName ==
+		 * "" || fileName == null || fileName == "" ||
+		 * imp.getOriginalFileInfo().fileName.lastIndexOf(".tif") == -1) fileDirName =
+		 * Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
+		 * else fileDirName = fileDirName + File.separator + fileName.substring(0,
+		 * fileName.lastIndexOf(".tif")) + "_GetTrajectories"; setDirectory(new
+		 * File(fileDirName), TRAJ); new File(fileDirName).mkdir();
+		 **/
+		fileDirName = Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
 		setDirectory(new File(fileDirName), TRAJ);
+		new File(fileDirName).mkdir();
 
 		// Apply a FFT bandpass filter to remove all features < 1 pix and > 10 pix in
 		// frequency.
@@ -111,7 +116,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, minNumberOfLocPerTraj,
 				FittingPeakFit.pixelSize, true);
 
-		ResultsTableMt avgTrajDirections = calculateAvgTrajDirection(trajs, imp.getImageStackSize(), true);
+		ResultsTableMt avgTrajDirections = calculateAvgTrajDirection(trajs, imp.getImageStackSize(), true, false);
 
 		plotTrajs(this.imp, trajs, avgTrajDirections);
 		long endTime = System.nanoTime();
@@ -125,11 +130,13 @@ public class Get_Trajectories extends Align_Trajectories {
 
 		IJ.log("Beginning the MSD and JD analysis...");
 		diffusionAnalysis(trajs, rtFit, minNumberOfLocPerTraj);
+
 		endTime = System.nanoTime();
 		IJ.log("All done! - " + (endTime - startTime) / 1000000000.0 + " s.");
 	}
 
-	public ResultsTableMt calculateAvgTrajDirection(ResultsTableMt[] trajs, int frameNumber, boolean save) {
+	public ResultsTableMt calculateAvgTrajDirection(ResultsTableMt[] trajs, int frameNumber, boolean save,
+			boolean onlyUpdateAngle) {
 		// For each frame, list the directions (vectors) of all the trajectories in it
 		ResultsTableMt[] trajDirections = new ResultsTableMt[frameNumber - 1];
 		// Initiate the object
@@ -168,6 +175,66 @@ public class Get_Trajectories extends Align_Trajectories {
 			avgTrajDirections.saveAsPrecise(fileDirName + File.separator + "AvgTrajectory.txt", 10);
 		}
 
+		// ANGLE CALCULATION
+		// Calculate the average angle theta between each trajectory and the average
+		// trajectory (averaged over the timepoints)
+		double[] avgThetaPerTraj = new double[trajs.length - 3];
+		for (int traj = 3; traj < trajs.length; traj++) {
+			for (int row = 0; row < trajs[traj].getCounter() - 1; row++) {
+				int fr = (int) trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row) - 1;
+				// First vector = traj(row+1) - traj(row)
+				double x1 = trajs[traj].getValueAsDouble(ResultsTableMt.X, row + 1)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.X, row);
+				double y1 = trajs[traj].getValueAsDouble(ResultsTableMt.Y, row + 1)
+						- trajs[traj].getValueAsDouble(ResultsTableMt.Y, row);
+				// Second vector = avg(traj(row+1) - traj(row)) =
+				// avgTrajDirections[frame(row)-1]
+				double x2 = avgTrajDirections.getValueAsDouble(ResultsTableMt.X, fr);
+				double y2 = avgTrajDirections.getValueAsDouble(ResultsTableMt.Y, fr);
+				// angle(A->B) = atan2(vectorB.y, vectorB.x) - atan2(vectorA.y, vectorA.x); A=2
+				// ; B=1 ;
+				double theta = Math.atan2(y1, x1) - Math.atan2(y2, x2);
+				while (theta > Math.PI)
+					theta -= 2.0 * Math.PI;
+				while (theta < -Math.PI)
+					theta += 2.0 * Math.PI;
+				avgThetaPerTraj[traj - 3] += theta;
+			}
+			avgThetaPerTraj[traj - 3] /= (trajs[traj].getCounter() - 1);
+		}
+
+		// Plot the angles theta
+		Plot plot2 = new Plot("Average angle of each trajectory related to the average trajectory", "", "");
+		plot2.setLimits(-1, 1, -1, 1);
+		plot2.setSize(700, 700);
+		plot2.setLineWidth(1);
+		plot2.setColor(Color.BLACK);
+
+		// Colour the vector depending on the local density calculated +/- 5°
+		double radius = Math.toRadians(5);
+		double[] density = new double[avgThetaPerTraj.length];
+		for (int traj = 0; traj < avgThetaPerTraj.length; traj++) {
+			for (int traj2 = 0; traj2 < avgThetaPerTraj.length; traj2++) {
+				if (traj2 != traj && Math.abs(avgThetaPerTraj[traj] - avgThetaPerTraj[traj2]) < radius)
+					density[traj]++;
+			}
+		}
+		int max = (int) MP.utils.Utils.getMax(density);
+
+		for (int traj = 0; traj < avgThetaPerTraj.length; traj++) {
+			plot2.setColor(MP.utils.Utils.getGradientColor(Color.GREEN, Color.RED, max + 1, (int) density[traj]));
+			plot2.drawLine(0, 0, Math.cos(avgThetaPerTraj[traj]), Math.sin(avgThetaPerTraj[traj]));
+		}
+
+		plot2.setLineWidth(3);
+		plot2.setColor(Color.BLACK);
+		plot2.drawLine(0, 0, 1, 0);
+
+		plot2.show();
+		Utils.saveTiff(plot2.getImagePlus(), fileDirName + File.separator + "AvgAngles.tiff", false);
+		this.angle = avgThetaPerTraj;
+
+		// BACK TO PLOTTING THE AVERAGE TRAJECTORY
 		// Plot the average trajectory in a different window, in black
 		// Plot below all the superposed trajectories, colour-coded with their stdev to
 		// the avg
@@ -219,48 +286,51 @@ public class Get_Trajectories extends Align_Trajectories {
 			}
 			stdev[traj - 3] = Math.sqrt(stdev[traj - 3] / (trajs[traj].getCounter() - 1.0));
 		}
-		// Calculate the limits of the plots
-		double xMax = 0;
-		double yMax = 0;
-		for (int i = 0; i < pols.length; i++) {
-			double[] temp = Utils.getMinMax(pols[i][0]);
-			xMax = Math.max(xMax, Math.max(-temp[0], temp[1]));
-			temp = Utils.getMinMax(pols[i][1]);
-			yMax = Math.max(yMax, Math.max(-temp[0], temp[1]));
-		}
-		double limit = ((int) (Math.max(xMax, yMax) / 5.0) + 1) * 5;
 
-		// Plot the cumulative trajectories
-		Plot plot = new Plot("Detected trajectories", "x (pixel)", "y (pixel)");
-		plot.setLimits(-limit, limit, -limit, limit);
-		plot.setSize(700, 700);
-		for (int frame = 1; frame < avgPol[0].length; frame++) {
-			IJ.showStatus("Plotting trajectory directions");
-			IJ.showProgress(frame, avgPol[0].length);
+		if (!onlyUpdateAngle) {
+			// Calculate the limits of the plots
+			double xMax = 0;
+			double yMax = 0;
+			for (int i = 0; i < pols.length; i++) {
+				double[] temp = Utils.getMinMax(pols[i][0]);
+				xMax = Math.max(xMax, Math.max(-temp[0], temp[1]));
+				temp = Utils.getMinMax(pols[i][1]);
+				yMax = Math.max(yMax, Math.max(-temp[0], temp[1]));
+			}
+			double limit = ((int) (Math.max(xMax, yMax) / 5.0) + 1) * 5;
 
-			double maxStdev = Utils.getMax(stdev);
-			plot.setLineWidth(1);
-			for (int traj = 0; traj < pols.length; traj++) {
-				plot.setColor(
-						Utils.getGradientColor(Color.GREEN, Color.RED, 100, (int) (stdev[traj] / maxStdev * 100.0)));
-				for (int frameBelow = Math.max(1, frame - 10); frameBelow <= frame; frameBelow++) {
-					if (pols[traj][0][frameBelow - 1] != pols[traj][0][frameBelow]
-							|| pols[traj][1][frameBelow - 1] != pols[traj][1][frameBelow])
-						plot.drawLine(pols[traj][0][frameBelow - 1], pols[traj][1][frameBelow - 1],
-								pols[traj][0][frameBelow], pols[traj][1][frameBelow]);
+			// Plot the cumulative trajectories
+			Plot plot = new Plot("Detected trajectories", "x (pixel)", "y (pixel)");
+			plot.setLimits(-limit, limit, -limit, limit);
+			plot.setSize(700, 700);
+			for (int frame = 1; frame < avgPol[0].length; frame++) {
+				IJ.showStatus("Plotting trajectory directions");
+				IJ.showProgress(frame, avgPol[0].length);
+
+				double maxStdev = Utils.getMax(stdev);
+				plot.setLineWidth(1);
+				for (int traj = 0; traj < pols.length; traj++) {
+					plot.setColor(Utils.getGradientColor(Color.GREEN, Color.RED, 100,
+							(int) (stdev[traj] / maxStdev * 100.0)));
+					for (int frameBelow = Math.max(1, frame - 10); frameBelow <= frame; frameBelow++) {
+						if (pols[traj][0][frameBelow - 1] != pols[traj][0][frameBelow]
+								|| pols[traj][1][frameBelow - 1] != pols[traj][1][frameBelow])
+							plot.drawLine(pols[traj][0][frameBelow - 1], pols[traj][1][frameBelow - 1],
+									pols[traj][0][frameBelow], pols[traj][1][frameBelow]);
+					}
 				}
+				plot.setColor(Color.BLACK);
+				plot.setLineWidth(2);
+				for (int frameBelow = 1; frameBelow <= frame; frameBelow++) {
+					plot.drawLine(avgPol[0][frameBelow - 1], avgPol[1][frameBelow - 1], avgPol[0][frameBelow],
+							avgPol[1][frameBelow]);
+				}
+				plot.addToStack();
 			}
-			plot.setColor(Color.BLACK);
-			plot.setLineWidth(2);
-			for (int frameBelow = 1; frameBelow <= frame; frameBelow++) {
-				plot.drawLine(avgPol[0][frameBelow - 1], avgPol[1][frameBelow - 1], avgPol[0][frameBelow],
-						avgPol[1][frameBelow]);
-			}
-			plot.addToStack();
-		}
 
-		plot.show();
-		Utils.saveTiff(plot.getImagePlus(), fileDirName + File.separator + "AvgTrajectory.tiff", false);
+			plot.show();
+			Utils.saveTiff(plot.getImagePlus(), fileDirName + File.separator + "AvgTrajectory.tiff", false);
+		}
 		this.stdev = stdev;
 
 		return avgTrajDirections;
@@ -634,7 +704,7 @@ public class Get_Trajectories extends Align_Trajectories {
 
 		analysis.msd_Analysis(true, 10, minNumberOfLocPerTraj);
 
-		analysis.populationJD_Analysis(saveTextFile);
+		analysis.populationJD_Analysis(saveTextFile); // TODO Remove, as unnecessary for now...
 	}
 
 }

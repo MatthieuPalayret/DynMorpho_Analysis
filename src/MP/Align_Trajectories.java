@@ -19,6 +19,7 @@ public class Align_Trajectories extends Analyse_Trajectories {
 	ResultsTableMt trackResults = new ResultsTableMt();
 	private int savePrecision = 6;
 	double[] stdev = null;
+	double[] angle = null;
 
 	public Align_Trajectories() {
 	}
@@ -170,6 +171,10 @@ public class Align_Trajectories extends Analyse_Trajectories {
 							"Standard deviation from average trajectory " + (unitsKnown ? "(µm)" : "(pix)"),
 							stdev[entry.getKey()]);
 				}
+				if (angle != null && entry.getKey() < angle.length) {
+					trackResults.addValue("Average angle between the trajectory and the average trajectory (rad)",
+							angle[entry.getKey()]);
+				}
 			}
 		}
 		trackResults.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_Analysis.csv", savePrecision);
@@ -196,6 +201,10 @@ public class Align_Trajectories extends Analyse_Trajectories {
 			if (stdev != null) {
 				calculateAvgStdev(trackResults, rtRear, rtUpfront,
 						"Standard deviation from average trajectory " + (unitsKnown ? "(µm)" : "(pix)"));
+			}
+			if (angle != null) {
+				calculateAvgStdev(trackResults, rtRear, rtUpfront,
+						"Average angle between the trajectory and the average trajectory (rad)");
 			}
 			rtRear.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_rear_statistics.csv", savePrecision);
 			rtUpfront.saveAsPrecise(directorys[TRAJ] + File.separator + "Track_upfront_statistics.csv", savePrecision);
