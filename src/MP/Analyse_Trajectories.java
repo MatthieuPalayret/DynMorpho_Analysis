@@ -309,7 +309,8 @@ public class Analyse_Trajectories implements PlugIn {
 					int deltaT;
 					while (row2 < traj.getCounter()
 							&& (deltaT = (int) (traj.getValueAsDouble(ResultsTableMt.FRAME, row2)
-									- traj.getValueAsDouble(ResultsTableMt.FRAME, row))) <= nMSD) {
+									- traj.getValueAsDouble(ResultsTableMt.FRAME, row))) <= nMSD
+							&& deltaT > 0) {
 						msd[deltaT - 1] += Math.pow(Utils.getDistance(traj, row, row2), 2.0);
 						numberMSD[deltaT - 1]++;
 						row2++;
