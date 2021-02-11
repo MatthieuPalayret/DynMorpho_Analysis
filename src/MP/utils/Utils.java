@@ -167,6 +167,19 @@ public class Utils {
 		return result;
 	}
 
+	public static double[] runningAverageStrict(double[] vector, int smoothingCoeffInPixels) {
+		double[] result = new double[vector.length];
+		for (int i = 0; i < vector.length; i++) {
+			double min = Math.max(0, i - smoothingCoeffInPixels);
+			double max = Math.min(i + smoothingCoeffInPixels, vector.length - 1);
+			for (int j = (int) min; j <= max; j++) {
+				result[i] += vector[j];
+			}
+			result[i] /= (max - min + 1.0);
+		}
+		return result;
+	}
+
 	public static double[] derivative(double[] vector, boolean circular) {
 		double[] result = new double[vector.length];
 		for (int i = 0; i < vector.length; i++) {

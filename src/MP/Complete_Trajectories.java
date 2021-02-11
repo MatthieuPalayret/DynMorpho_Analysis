@@ -36,7 +36,6 @@ public class Complete_Trajectories extends Get_Trajectories {
 		ResultsTableMt[] trajs = new ResultsTableMt[(int) rtFit.getValueAsDouble(ResultsTableMt.GROUP,
 				rtFit.getCounter() - 1) + 3];
 		ResultsTableMt groupSizes = new ResultsTableMt();
-		final int GROUPSIZE_Sorted = rtFit.addNewColumn("GroupSize");
 		groupSizes.incrementCounter();
 		final int GROUPSIZE_groupSizes = groupSizes.addNewColumn("GroupSize");
 
@@ -64,13 +63,17 @@ public class Complete_Trajectories extends Get_Trajectories {
 
 		trajs[0] = groupSizes;
 
-		calculateAvgTrajDirection(trajs, (int) Utils.getMax(rtFit, ResultsTableMt.FRAME), true, true);
+		int frameNumber = (int) Utils.getMax(rtFit, ResultsTableMt.FRAME);
+		calculateAvgTrajDirection(trajs, frameNumber, true, true);
 
 		// Analyse trajectories...
 		// Link with Align_Trajectories, by making Get_Trajectories an extension of
 		// Align_Trajectories.
 		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
 		analyseTheTracks(false, false, false, true);
+
+		// correctForCellDisplacement(trajs, frameNumber, true);
+		pairwiseDistance(trajs, true);
 
 		IJ.log("All done!");
 	}

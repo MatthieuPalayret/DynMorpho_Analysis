@@ -128,6 +128,9 @@ public class Get_Trajectories extends Align_Trajectories {
 		// TODO : cell tracking to properly analyse REAR and FRONT tracks...
 		analyseTheTracks(false, false, false, true);
 
+		// correctForCellDisplacement(trajs, imp.getImageStackSize(), true);
+		pairwiseDistance(trajs, true);
+
 		IJ.log("Beginning the MSD and JD analysis...");
 		diffusionAnalysis(trajs, rtFit, minNumberOfLocPerTraj);
 
@@ -334,6 +337,293 @@ public class Get_Trajectories extends Align_Trajectories {
 		this.stdev = stdev;
 
 		return avgTrajDirections;
+	}
+
+	public void correctForCellDisplacement(ResultsTableMt[] trajs, int frameNumber, boolean save) {
+		// [1] Calculation of the cell displacement as the average displacement of
+		// consecutive trajectories.
+		double[][] averageDisplacement = new double[frameNumber - 1][2];
+		HashMap<Integer, Integer> listTrajInPreviousFrame = listTrajInFrame(trajs, 0);
+
+		for (int frame = 1; frame < frameNumber; frame++) {
+			HashMap<Integer, Integer> listTrajInFrame = listTrajInFrame(trajs, frame);
+			Iterator<Integer> it = listTrajInPreviousFrame.keySet().iterator();
+			double counter = 0;
+			// For all the trajectories present in frame-1, if they are also present in
+			// frame, include them to calculate the average displacement of the cell.
+			while (it.hasNext()) {
+				int traj = it.next();
+				if (listTrajInFrame.containsKey(traj)) {
+					averageDisplacement[frame - 1][0] += trajs[traj].getValueAsDouble(ResultsTableMt.X,
+							listTrajInFrame.get(traj))
+							- trajs[traj].getValueAsDouble(ResultsTableMt.X, listTrajInPreviousFrame.get(traj));
+					averageDisplacement[frame - 1][1] += trajs[traj].getValueAsDouble(ResultsTableMt.Y,
+							listTrajInFrame.get(traj))
+							- trajs[traj].getValueAsDouble(ResultsTableMt.Y, listTrajInPreviousFrame.get(traj));
+					counter++;
+				}
+			}
+			if (counter > 0)
+				averageDisplacement[frame - 1] = Utils.divide(averageDisplacement[frame - 1], counter);
+
+			// Update listTrajInPreviousFrame for next cycle
+			listTrajInPreviousFrame = listTrajInFrame;
+		}
+
+		// [2] Correct the position of the trajectories for the cell displacement
+		double[][] correctionToApply = new double[averageDisplacement.length][2];
+		correctionToApply[0][0] = averageDisplacement[0][0];
+		correctionToApply[0][1] = averageDisplacement[0][1];
+		for (int i = 1; i < correctionToApply.length; i++) {
+			correctionToApply[i][0] = averageDisplacement[i][0] + correctionToApply[i - 1][0];
+			correctionToApply[i][1] = averageDisplacement[i][1] + correctionToApply[i - 1][1];
+		}
+
+		// Duplicate the trajs[] structure before correcting the positions.
+		ResultsTableMt[] trajsCorr = new ResultsTableMt[trajs.length];
+		for (int i = 3; i < trajs.length; i++) {
+			trajsCorr[i] = trajs[i].clone();
+		}
+
+		// Apply the correction.
+		for (int traj = 3; traj < trajsCorr.length; traj++) {
+			for (int row = 0; row < trajsCorr[traj].getCounter(); row++) {
+				if (trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row) > 0) {
+					trajsCorr[traj].setValue(ResultsTableMt.X, row, trajsCorr[traj].getValueAsDouble(ResultsTableMt.X,
+							row)
+							- correctionToApply[(int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row)
+									- 1][0]);
+					trajsCorr[traj].setValue(ResultsTableMt.Y, row, trajsCorr[traj].getValueAsDouble(ResultsTableMt.Y,
+							row)
+							- correctionToApply[(int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row)
+									- 1][1]);
+				}
+			}
+		}
+
+		// [3] Determine the average centre of mass of the cell for each frame
+		double[][] centreOfMass = new double[2][frameNumber];
+		for (int frame = 0; frame < frameNumber; frame++) {
+			HashMap<Integer, Integer> listTrajInFrame = listTrajInFrame(trajsCorr, frame);
+			Iterator<Integer> it = listTrajInFrame.keySet().iterator();
+			double counter = 0;
+			while (it.hasNext()) {
+				int traj = it.next();
+				centreOfMass[0][frame] += trajsCorr[traj].getValueAsDouble(ResultsTableMt.X, listTrajInFrame.get(traj));
+				centreOfMass[1][frame] += trajsCorr[traj].getValueAsDouble(ResultsTableMt.Y, listTrajInFrame.get(traj));
+				counter++;
+			}
+			if (counter > 0) {
+				centreOfMass[0][frame] /= counter;
+				centreOfMass[1][frame] /= counter;
+			} else {
+				if (frame > 0 && centreOfMass[0][frame - 1] != 0) {
+					centreOfMass[0][frame] = centreOfMass[0][frame - 1];
+					centreOfMass[1][frame] = centreOfMass[1][frame - 1];
+				}
+			}
+		}
+		for (int frame = frameNumber - 2; frame >= 0; frame--) {
+			if (centreOfMass[0][frame] == 0) {
+				centreOfMass[0][frame] = centreOfMass[0][frame + 1];
+				centreOfMass[1][frame] = centreOfMass[1][frame + 1];
+			}
+		}
+		// Averaging the position of the CentreOfMass
+		centreOfMass[0] = Utils.runningAverageStrict(centreOfMass[0], 10);
+		centreOfMass[1] = Utils.runningAverageStrict(centreOfMass[1], 10);
+
+		// Plot the new result...
+		// TODO
+		// TODO What should I save??
+		Plot plot = new Plot("Corrected position of the trajectories", "", "");
+		for (int traj = 3; traj < trajsCorr.length; traj++) {
+			int frameNumberMax = (int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME,
+					trajsCorr[traj].getCounter() - 1);
+			int frameNumberMin = (int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, 0);
+			for (int row = 1; row < trajsCorr[traj].getCounter(); row++) {
+				plot.setColor(Utils.getGradientColor(Color.GREEN, Color.RED, frameNumberMax - frameNumberMin + 1,
+						(int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row) - frameNumberMin));
+				plot.addPoints(
+						new double[] { trajsCorr[traj].getValueAsDouble(ResultsTableMt.X, row - 1),
+								trajsCorr[traj].getValueAsDouble(ResultsTableMt.X, row) },
+						new double[] { trajsCorr[traj].getValueAsDouble(ResultsTableMt.Y, row - 1),
+								trajsCorr[traj].getValueAsDouble(ResultsTableMt.Y, row) },
+						Plot.LINE);
+				// plot.addPoints(trajsCorr[traj].getColumnAsDoubles(ResultsTableMt.X),
+				// trajsCorr[traj].getColumnAsDoubles(ResultsTableMt.Y), Plot.LINE);
+				plot.draw();
+			}
+		}
+		plot.setColor(Color.BLACK);
+		plot.addPoints(centreOfMass[0], centreOfMass[1], Plot.LINE);
+		plot.draw();
+		plot.setLimits(0, 100, 0, 100); // TODO Determine the correct limits
+		plot.show();
+
+		// [4] Calculate, for each point of each trajectory, its distance to the
+		// centreOfMass of the cell.
+		// Thus, we can calculate, for each trajectory, at which speed (average and
+		// global) it goes towards (or not) the centre of the cell.
+		double[] avgRadialSpeed = new double[trajsCorr.length - 3];
+		double[] globalRadialSpeed = new double[trajsCorr.length - 3];
+		double[] avgRadialDistance = new double[trajsCorr.length - 3];
+		String radialDistance = "Distance to the centre of the cell (pix)";
+		for (int traj = 3; traj < trajsCorr.length; traj++) {
+			for (int row = 0; row < trajsCorr[traj].getCounter(); row++) {
+				trajsCorr[traj].setValue(radialDistance, row, Math.pow(Math
+						.pow(trajsCorr[traj].getValueAsDouble(ResultsTableMt.X, row)
+								- centreOfMass[0][(int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, 0)], 2)
+						+ Math.pow(trajsCorr[traj].getValueAsDouble(ResultsTableMt.Y, row)
+								- centreOfMass[1][(int) trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, 0)], 2),
+						0.5));
+
+				if (row > 0) {
+					double temp = (trajsCorr[traj].getValue(radialDistance, row)
+							- trajsCorr[traj].getValue(radialDistance, row - 1));
+					avgRadialSpeed[traj - 3] += (temp) / (trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row)
+							- trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, row - 1));
+				}
+
+			}
+			avgRadialSpeed[traj - 3] /= -(trajsCorr[traj].getCounter() - 1);
+			globalRadialSpeed[traj - 3] = -(trajsCorr[traj].getValue(radialDistance, trajsCorr[traj].getCounter() - 1)
+					- trajsCorr[traj].getValue(radialDistance, 0))
+					/ (trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, trajsCorr[traj].getCounter() - 1)
+							- trajsCorr[traj].getValueAsDouble(ResultsTableMt.FRAME, 0));
+			IJ.log("Traj #: " + (traj - 3) + " - Avg speed towards the centre of the cell : " + avgRadialSpeed[traj - 3]
+					+ " // (global) " + globalRadialSpeed[traj - 3]);
+			avgRadialDistance[traj - 3] = Utils.average(trajsCorr[traj].getColumn(radialDistance));
+		}
+
+		// Plot the results in a 2D plot: radial speed vs. radial distance to the centre
+		// of the cell.
+		Plot plot2D = new Plot("Centripetal tendency of the trajectories",
+				"Radial speed (pix/frame) (grey = global speed ; green = avg)",
+				"radial distance to the centre of the cell (pix)");
+		plot2D.setColor(Color.GRAY);
+		plot2D.addPoints(globalRadialSpeed, avgRadialDistance, Plot.CIRCLE);
+		plot2D.draw();
+
+		plot2D.setColor(Color.GREEN);
+		plot2D.addPoints(avgRadialSpeed, avgRadialDistance, Plot.CIRCLE);
+		plot2D.draw();
+
+		plot2D.show();
+
+	}
+
+	public void pairwiseDistance(ResultsTableMt[] trajs, boolean save) {
+		// For each couple of trajectories sharing two consecutive frames,
+		// plot their average relative speed against their (initial) distance.
+		// - Centripetal attraction should result in negative speeds;
+		// - Centrifugal repulsion should result in positive speeds;
+		// - Randomness should result in speeds close to 0.
+		ResultsTableMt rt = new ResultsTableMt();
+
+		for (int traj = 3; traj < trajs.length; traj++) {
+			for (int traj2 = traj + 1; traj2 < trajs.length; traj2++) {
+				if (trajs[traj].getCounter() > 1 && trajs[traj2].getCounter() > 1
+						&& trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, 0) < trajs[traj2]
+								.getValueAsDouble(ResultsTableMt.FRAME, trajs[traj2].getCounter() - 1)
+						&& trajs[traj2].getValueAsDouble(ResultsTableMt.FRAME, 0) < trajs[traj]
+								.getValueAsDouble(ResultsTableMt.FRAME, trajs[traj].getCounter() - 1)) {
+					ResultsTableMt commonFrames = getCommonFrames(trajs, traj, traj2);
+					double initialDistance = Utils.getDistance(trajs[traj], (int) commonFrames.getValue("Row1", 0),
+							trajs[traj2], (int) commonFrames.getValue("Row2", 0));
+					double relativeSpeed = 0;
+					if (commonFrames.getCounter() > 1) {
+						for (int row = 1; row < commonFrames.getCounter(); row++) {
+							relativeSpeed += (Utils.getDistance(trajs[traj], (int) commonFrames.getValue("Row1", row),
+									trajs[traj2], (int) commonFrames.getValue("Row2", row))
+									- Utils.getDistance(trajs[traj], (int) commonFrames.getValue("Row1", row - 1),
+											trajs[traj2], (int) commonFrames.getValue("Row2", row - 1)))
+									/ (commonFrames.getValueAsDouble(ResultsTableMt.FRAME, row)
+											- commonFrames.getValueAsDouble(ResultsTableMt.FRAME, row - 1));
+						}
+						relativeSpeed /= commonFrames.getCounter() - 1.0;
+
+						int rowFinal = commonFrames.getCounter() - 1;
+						double globalSpeed = (Utils.getDistance(trajs[traj],
+								(int) commonFrames.getValue("Row1", rowFinal), trajs[traj2],
+								(int) commonFrames.getValue("Row2", rowFinal))
+								- Utils.getDistance(trajs[traj], (int) commonFrames.getValue("Row1", 0), trajs[traj2],
+										(int) commonFrames.getValue("Row2", 0)))
+								/ (commonFrames.getValueAsDouble(ResultsTableMt.FRAME, rowFinal)
+										- commonFrames.getValueAsDouble(ResultsTableMt.FRAME, 0));
+
+						rt.incrementCounter();
+						rt.addValue("Traj1", traj - 3);
+						rt.addValue("Traj2", traj2 - 3);
+						rt.addValue("Initial distance (pix)", initialDistance);
+						rt.addValue("Relative speed (pix/frame)", relativeSpeed);
+						rt.addValue("Relative global speed (pix/frame)", globalSpeed);
+					}
+				}
+			}
+		}
+
+		Plot plot = new Plot("Pairwise distance between trajectories",
+				"Average relative speed between two trajectories (pix/frame)",
+				"(Initial) distance separating the trajectories (pix)");
+		// plot.setColor(Color.GRAY);
+		// double[] xx = rt.getColumn("Relative global speed (pix/frame)");
+		// plot.addPoints(xx, rt.getColumn("Initial distance (pix)"), Plot.CIRCLE);
+		// plot.draw();
+		plot.setColor(Color.BLACK);
+		double[] xxx = rt.getColumn("Relative speed (pix/frame)");
+		plot.addPoints(xxx, rt.getColumn("Initial distance (pix)"), Plot.CIRCLE);
+		plot.draw();
+		plot.show();
+
+		// xx = Utils.getMeanAndStdev(xx);
+		xxx = Utils.getMeanAndStdev(xxx);
+		IJ.log("Mean average relative speed between two trajectories: " + xxx[0] + " +/- " + xxx[1] + " (pix/frame).");
+		// IJ.log("Mean (global) relative speed between two trajectories: " + xx[0] + "
+		// +/- " + xx[1] + " (pix/frame).");
+
+		if (save) {
+			Utils.saveTiff(plot.getImagePlus(), fileDirName + File.separator + "Pairwise_Analysis.tiff", false);
+			rt.saveAsPrecise(fileDirName + File.separator + "Pairwise_Analysis.csv", 6);
+		}
+	}
+
+	private ResultsTableMt getCommonFrames(ResultsTableMt[] trajs, int traj1, int traj2) {
+		ResultsTableMt retour = new ResultsTableMt();
+		int row2 = 0;
+		for (int row1 = 0; row1 < trajs[traj1].getCounter() && row2 < trajs[traj2].getCounter(); row1++) {
+			while (row2 < trajs[traj2].getCounter() && trajs[traj2].getValueAsDouble(ResultsTableMt.FRAME,
+					row2) < trajs[traj1].getValueAsDouble(ResultsTableMt.FRAME, row1))
+				row2++;
+			if (row2 < trajs[traj2].getCounter() && trajs[traj2].getValueAsDouble(ResultsTableMt.FRAME,
+					row2) == trajs[traj1].getValueAsDouble(ResultsTableMt.FRAME, row1)) {
+				retour.incrementCounter();
+				retour.addValue(ResultsTableMt.FRAME, trajs[traj2].getValueAsDouble(ResultsTableMt.FRAME, row2));
+				retour.addValue("Row1", row1);
+				retour.addValue("Row2", row2);
+			}
+		}
+		return retour;
+	}
+
+	private HashMap<Integer, Integer> listTrajInFrame(ResultsTableMt[] trajs, int frame) {
+		HashMap<Integer, Integer> hm = new HashMap<Integer, Integer>();
+		for (int traj = 3; traj < trajs.length; traj++) {
+			if (frame >= trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, 0)
+					&& frame <= trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, trajs[traj].getCounter() - 1)) {
+				int absent = -1;
+				for (int row = 0; row < trajs[traj].getCounter() && absent < 0; row++) {
+					if (trajs[traj].getValueAsDouble(ResultsTableMt.FRAME, row) == frame) {
+						absent = row;
+					}
+				}
+
+				if (absent > 0) {
+					hm.put(traj, absent);
+				}
+			}
+		}
+		return hm;
 	}
 
 	public static ResultsTableMt filterLoc(ResultsTableMt rtFit, double minIntensity, double minSigma,
