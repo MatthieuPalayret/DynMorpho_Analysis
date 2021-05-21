@@ -9,7 +9,7 @@ import net.calm.iaclasslibrary.UserVariables.UserVariables;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.532;
+	public static final double version = 1.533;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()

@@ -173,6 +173,10 @@ public class ResultsTableMt extends ResultsTable {
 
 	}
 
+	public double[] getColumn(String columnString) {
+		return this.getColumnAsDoubles(this.getColumnIndex(columnString));
+	}
+
 	/**
 	 * Opens a tab or comma delimited text file and returns it as a ResultsTable,
 	 * without requiring a try/catch statement. Displays a file open dialog if

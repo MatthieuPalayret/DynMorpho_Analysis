@@ -690,7 +690,7 @@ public class Get_Trajectories extends Align_Trajectories {
 
 					for (int row = 0; row < retour[traj + 3].getCounter(); row++) {
 						while (saveTraj.getCounter() - 1 < row)
-							saveTraj.addRow();
+							saveTraj.incrementCounter();
 						saveTraj.setValue(columnFrame, row,
 								retour[traj + 3].getValueAsDouble(ResultsTableMt.FRAME, row));
 						saveTraj.setValue(columnX, row, retour[traj + 3].getValueAsDouble(ResultsTableMt.X, row));
