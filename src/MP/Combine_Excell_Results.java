@@ -28,6 +28,14 @@ import MP.objects.ResultsTableMt;
 import ij.IJ;
 
 public class Combine_Excell_Results extends Combine_Protrusion_Results {
+	public class Plots_Results {
+
+		public Plots_Results() {
+			// TODO Auto-generated constructor stub
+		}
+
+	}
+
 	public Combine_Excell_Results() {
 		super("Imaris file", JFileChooser.FILES_ONLY);
 	}

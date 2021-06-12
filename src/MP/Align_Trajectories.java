@@ -95,16 +95,21 @@ public class Align_Trajectories extends Analyse_Trajectories {
 		// (global displacement / trajectory length), trajectory length, global
 		// displacement, time length, and rear or upfront (cellName and trackNumber)
 		Iterator<String> it = finalHashMap.keySet().iterator();
+		// For each detected cell...
 		while (it.hasNext()) {
 			String cellName = it.next();
 			Iterator<Entry<Integer, ResultsTableMt>> itTracks = finalHashMap.get(cellName).trajTracks.entrySet()
 					.iterator();
 			ResultsTableMt cellTrack = finalHashMap.get(cellName).cellTrack;
 
+			// For each detected traj. in that cell...
 			while (itTracks.hasNext()) {
 				Entry<Integer, ResultsTableMt> entry = itTracks.next();
 				ResultsTableMt rtTrack = entry.getValue();
 				double trajLength = 0;
+				double trajSpeed = 0;
+
+				// Determine whether the traj. starts as a FRONT or ROW trajectory
 				int type = 0;
 				int cellRow = 0;
 				while (cellRow < cellTrack.getCounter() && cellTrack.getValueAsDouble(ResultsTableMt.FRAME,
@@ -116,8 +121,11 @@ public class Align_Trajectories extends Analyse_Trajectories {
 					else
 						type = UPFRONT;
 
+				// For each localisation of that traj...
 				for (int row = 1; row < rtTrack.getCounter(); row++) {
 					trajLength += Utils.getDistance(rtTrack, row, row - 1);
+					// trajSpeed += trajLength / (rtTrack.getValue(unitsKnown ? "Time" : "Frame",
+					// row) - rtTrack.getValue(unitsKnown ? "Time" : "Frame", row - 1));
 					if (averageValues) {
 						if (row == 1) {
 							avgIntensity += rtTrack.getValueAsDouble(ResultsTableMt.INTENSITY, 0);

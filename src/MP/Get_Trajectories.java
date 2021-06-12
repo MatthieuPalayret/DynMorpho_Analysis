@@ -47,54 +47,45 @@ public class Get_Trajectories extends Align_Trajectories {
 			IJ.log("Please open an movie of the cells to be analysed before running the Get_Trajectories plugin.");
 			return;
 		}
-		// Nora prefers always being asked where to save the processed files...
-		/**
-		 * fileDirName = imp.getOriginalFileInfo().directory; String fileName =
-		 * imp.getOriginalFileInfo().fileName; if (fileDirName == null || fileDirName ==
-		 * "" || fileName == null || fileName == "" ||
-		 * imp.getOriginalFileInfo().fileName.lastIndexOf(".tif") == -1) fileDirName =
-		 * Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
-		 * else fileDirName = fileDirName + File.separator + fileName.substring(0,
-		 * fileName.lastIndexOf(".tif")) + "_GetTrajectories"; setDirectory(new
-		 * File(fileDirName), TRAJ); new File(fileDirName).mkdir();
-		 **/
+
+		// Ask where to save the processed files
 		fileDirName = Utils.getADir("Get a directory to save results", "", "").getAbsolutePath();
 		setDirectory(new File(fileDirName), TRAJ);
 		new File(fileDirName).mkdir();
 
-		// Apply a FFT bandpass filter to remove all features < 1 pix and > 10 pix in
-		// frequency.
-		IJ.run("Bandpass Filter...", "filter_large=10 filter_small=1 suppress=None tolerance=5 process");
+		// Pre-processing of the movie
+		{
+			// Apply a FFT bandpass filter to remove all features < 1 pix and > 10 pix in
+			// frequency.
+			IJ.run("Bandpass Filter...", "filter_large=10 filter_small=1 suppress=None tolerance=5 process");
 
-		// Smooth the movie thanks to a walking average filter over 3 frames.
-		WalkingAverageMP avg = new WalkingAverageMP();
-		avg.run("3");
+			// Smooth the movie thanks to a walking average filter over 3 frames.
+			WalkingAverageMP avg = new WalkingAverageMP();
+			avg.run("3");
 
-		IJ.selectWindow("walkAv");
-		IJ.run("Enhance Contrast", "saturated=0.35");
+			IJ.selectWindow("walkAv");
+			IJ.run("Enhance Contrast", "saturated=0.35");
+		}
 
 		// Run PeakFit to get as many localisations as possible
-		/*
-		 * IJ.run("Peak Fit",
-		 * "template=[None] config_file=C:\\Users\\matth\\gdsc.smlm.settings.xml calibration=100 gain=400 exposure_time=750 initial_stddev0=1.000 initial_stddev1=1.000 initial_angle=0.000 spot_filter_type=Single spot_filter=Mean smoothing=1.20 search_width=1 border=1 fitting_width=3 fit_solver=[Least Squares Estimator (LSE)] fit_function=[Free circular] fail_limit=10 neighbour_height=0.30 residuals_threshold=1 duplicate_distance=0.50 shift_factor=2 signal_strength=0 min_photons=0 min_width_factor=0.15 width_factor=5 precision=0 show_deviations results_table=Uncalibrated image=[Signal (width=precision)] weighted equalised image_precision=5 image_scale=1 results_dir=[] results_in_memory fit_criteria=[Least-squared error] significant_digits=5 coord_delta=0.0001 lambda=10.0000 max_iterations=20 stack"
-		 * );
-		 */
+		ResultsTableMt rtFit = new ResultsTableMt();
+		{
+			IJ.selectWindow("walkAv");
+			imp = IJ.getImage();
+			imp.show();
+			imp.getWindow().setVisible(true);
+			imp.setRoi(new Rectangle(0, 0, this.imp.getWidth(), this.imp.getHeight()));
+			imp.unlock();
+			if (save)
+				Utils.saveTiff(this.imp, fileDirName + File.separator + "walkAverage.tif", false);
 
-		IJ.selectWindow("walkAv");
-		imp = IJ.getImage();
-		imp.show();
-		imp.getWindow().setVisible(true);
-		imp.setRoi(new Rectangle(0, 0, this.imp.getWidth(), this.imp.getHeight()));
-		imp.unlock();
-		if (save)
-			Utils.saveTiff(this.imp, fileDirName + File.separator + "walkAverage.tif", false);
+			FittingPeakFit fitting = new FittingPeakFit();
+			fitting.setConfig(fileDirName);
+			fitting.fitImage(this.imp);
+			rtFit = fitting.getResults();
+		}
 
-		FittingPeakFit fitting = new FittingPeakFit();
-		fitting.setConfig(fileDirName);
-		fitting.fitImage(this.imp);
-		ResultsTableMt rtFit = fitting.getResults();
-		// Sort Rt following the "frame" column - for the further groupInTrajectories
-		// step.
+		// Sort following the "frame" column - for the further groupInTrajectories step.
 		rtFit = Utils.sortRt(rtFit, ResultsTableMt.FRAME);
 		rtFit.saveAsPrecise(fileDirName + File.separator + "TableFit_PeakFit.txt", 10);
 
@@ -102,20 +93,22 @@ public class Get_Trajectories extends Align_Trajectories {
 		// and dark time) while plotting them in real time.
 		ParamAlignTraj selectParams = new ParamAlignTraj(rtFit, imp.getImageStack());
 		selectParams.run();
-
-		double minIntensity = selectParams.params.minIntensity; // 200;
-		double minSigma = selectParams.params.minSigma;// 1.25;
-		double maxSigma = selectParams.params.maxSigma;// 2.75;
-		selectParams.params.save(fileDirName);
 		long startTime = System.nanoTime();
-		rtFit = filterLoc(rtFit, minIntensity, minSigma, maxSigma);
+
+		{
+			double minIntensity = selectParams.params.minIntensity; // 200;
+			double minSigma = selectParams.params.minSigma;// 1.25;
+			double maxSigma = selectParams.params.maxSigma;// 2.75;
+			selectParams.params.save(fileDirName);
+			rtFit = filterLoc(rtFit, minIntensity, minSigma, maxSigma);
+		}
 
 		double maxStepPix = selectParams.params.maxStepPix;// 3;
 		int maxDarkTimeFrame = selectParams.params.maxDarkTimeFrame;// 4;
 		int minNumberOfLocPerTraj = selectParams.params.minNumberOfLocPerTraj;// 3;
-		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, minNumberOfLocPerTraj,
-				FittingPeakFit.pixelSize, true);
+		ResultsTableMt[] trajs = groupInTrajectories(rtFit, maxStepPix, maxDarkTimeFrame, minNumberOfLocPerTraj, true);
 
+		// ANALYSIS 1 - Angle of the trajectories to the average direction
 		ResultsTableMt avgTrajDirections = calculateAvgTrajDirection(trajs, imp.getImageStackSize(), true, false);
 
 		plotTrajs(this.imp, trajs, avgTrajDirections);
@@ -631,6 +624,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		ResultsTableMt rt = new ResultsTableMt();
 		final int SIGMAX = rtFit.getColumnIndex("SigmaX");
 		final int SIGMAY = rtFit.getColumnIndex("SigmaY");
+
 		for (int row = 0; row < rtFit.getCounter(); row++) {
 			double sigmaX = rtFit.getValueAsDouble(SIGMAX, row);
 			double sigmaY = rtFit.getValueAsDouble(SIGMAY, row);
@@ -644,22 +638,22 @@ public class Get_Trajectories extends Align_Trajectories {
 	}
 
 	public ResultsTableMt[] groupInTrajectories(ResultsTableMt rt_Sorted, double maxStepPix, int maxDarkTimeFrame,
-			int minNumberOfLocPerTraj, int pixelSize, boolean save) {
+			int minNumberOfLocPerTraj, boolean save) {
 
 		// Trajectories: linking the name of the last Loc of each traj to its traj
 		Hashtable<Integer, Traj> trajectories = new Hashtable<Integer, Traj>();
 
-		// Sort Rt following the "frame" column
-		// ResultsTableMt rt_Sorted = Utils.sortRt(rt, ResultsTableMt.FRAME); // - Done
-		// previously.
+		// NB: The Rt has previously been sorted following the "frame" column
+		// ResultsTableMt rt_Sorted = Utils.sortRt(rt, ResultsTableMt.FRAME);
 
 		// Build trajectories
-		buildTrajectories(rt_Sorted, maxStepPix, maxDarkTimeFrame, pixelSize, trajectories);
+		buildTrajectories(rt_Sorted, maxStepPix, maxDarkTimeFrame, trajectories);
 
-		// Extract trajectories from 'trajectories' into 'retour[2...end]' and into
+		// Extract trajectories from 'trajectories' into 'retour[3...end]' and into
 		// finalHashMap (from Align_Trajectories ; in a single "SingleCell" cell)
 		ResultsTableMt[] retour = extractAndFilterTrajectories(trajectories, rt_Sorted, minNumberOfLocPerTraj);
 
+		// Save the resultsTableMt as outputs.
 		if (save && fileDirName != null) {
 			rt_Sorted.saveAsPrecise(fileDirName + File.separator + "TableFit_Sorted.txt", 10);
 
@@ -705,7 +699,7 @@ public class Get_Trajectories extends Align_Trajectories {
 		return retour;
 	}
 
-	private static double[] buildTrajectories(ResultsTableMt rt_Sorted, double stepPix, int memory, int pixelSize,
+	private static void buildTrajectories(ResultsTableMt rt_Sorted, double stepPix, int memory,
 			Hashtable<Integer, Traj> trajectories) {
 		boolean mergeNotEnd = true;// false; //TODO
 		boolean keepClosest = false;
@@ -714,7 +708,6 @@ public class Get_Trajectories extends Align_Trajectories {
 		IJ.showStatus("Building trajectories...");
 
 		int[] memoryRows = new int[memory];
-		double[] stepHist = new double[(int) (stepPix * pixelSize + 0.5D) + 1];
 
 		int row = 0;
 		while (rt_Sorted.getValueAsDouble(ResultsTableMt.FRAME, row) < 1)
@@ -745,7 +738,6 @@ public class Get_Trajectories extends Align_Trajectories {
 							if (rt_Sorted.getValue("isFitted", row2) > 0
 									&& Utils.getDistance(rt_Sorted, row, row2) < stepPix) {
 								psf++;
-								stepHist[(int) (Utils.getDistance(rt_Sorted, row, row2) * pixelSize + 0.5D)]++;
 
 								if (!trajectories.containsKey(row)) { // - if 1 PSF, create or add it to a trajectory
 									if (trajectories.containsKey(row2) && !trajectories.get(row2).Ended) {
@@ -798,8 +790,6 @@ public class Get_Trajectories extends Align_Trajectories {
 			}
 		}
 		IJ.showProgress(endFrame, endFrame);
-
-		return stepHist;
 	}
 
 	private ResultsTableMt[] extractAndFilterTrajectories(Hashtable<Integer, Traj> trajectories,
@@ -828,29 +818,28 @@ public class Get_Trajectories extends Align_Trajectories {
 
 		Iterator<Entry<Integer, Traj>> it = trajectories.entrySet().iterator();
 		int traj = 0;
+		// For each trajectory...
 		while (it.hasNext()) {
 			retour[traj + 3] = new ResultsTableMt();
 
 			LinkedList<Integer> trajList = it.next().getValue().list;
-			double[] x = new double[trajList.size()];
-			double[] y = new double[trajList.size()];
+
+			// 1- Update groupSizes (= retour[0])
 			while (groupSizes.getCounter() < traj + 1)
 				groupSizes.incrementCounter();
 			groupSizes.setValue(GROUPSIZE_groupSizes, traj, trajList.size());
 			// IJ.log("Traj # "+(traj+1)+" Size: " + trajList.size());
 
 			Iterator<Integer> itList = trajList.iterator();
-			int i = 0;
+			// 2- Create the rt corresponding to the traj (= retour[traj + 3])
+			// and 3- Update rt_Sorted "Group" and "GroupSize" columns.
+			// For each fit in the trajectory...
 			while (itList.hasNext()) {
 				int loc = itList.next();
-				// IJ.log(""+loc);
-				x[i] = rt_Sorted.getValueAsDouble(ResultsTableMt.X, loc);
-				y[i] = rt_Sorted.getValueAsDouble(ResultsTableMt.Y, loc);
 
 				Utils.addRow(rt_Sorted, retour[traj + 3], loc);
 				rt_Sorted.setValue(ResultsTableMt.GROUP, loc, traj + 1);
 				rt_Sorted.setValue(GROUPSIZE_Sorted, loc, trajList.size());
-				i++;
 			}
 
 			allTrajs.trajTracks.put(traj, retour[traj + 3]);

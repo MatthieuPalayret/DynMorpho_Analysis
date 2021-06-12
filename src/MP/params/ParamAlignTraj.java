@@ -23,7 +23,6 @@ import javax.swing.event.ChangeListener;
 
 import MP.Get_Trajectories;
 import MP.objects.ResultsTableMt;
-import MP.utils.FittingPeakFit;
 import ij.IJ;
 import ij.ImageListener;
 import ij.ImagePlus;
@@ -482,7 +481,7 @@ public class ParamAlignTraj extends JFrame
 
 		rtFit = Get_Trajectories.filterLoc(rtFit, paramTemp.minIntensity, paramTemp.minSigma, paramTemp.maxSigma);
 		ResultsTableMt[] trajs = GT.groupInTrajectories(rtFit, paramTemp.maxStepPix, paramTemp.maxDarkTimeFrame,
-				paramTemp.minNumberOfLocPerTraj, FittingPeakFit.pixelSize, false);
+				paramTemp.minNumberOfLocPerTraj, false);
 		Get_Trajectories.plotTrajs(image, trajs);
 
 		image.setHideOverlay(false);

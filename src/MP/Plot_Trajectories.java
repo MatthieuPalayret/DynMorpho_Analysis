@@ -1,6 +1,7 @@
 package MP;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,7 +20,14 @@ import MP.objects.ResultsTableMt;
 import MP.params.Params;
 import MP.utils.Utils;
 import ij.IJ;
+import ij.ImagePlus;
+import ij.gui.ImageCanvas;
+import ij.gui.Overlay;
 import ij.gui.Plot;
+import ij.gui.PointRoi;
+import ij.gui.PolygonRoi;
+import ij.gui.Roi;
+import ij.plugin.filter.Analyzer;
 
 public class Plot_Trajectories extends Combine_Excell_Results {
 
@@ -28,11 +36,13 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 	 */
 	private static final long serialVersionUID = -6687219155912852110L;
 	private static final String SHEET_NAME = "Position";
-	private static int PositionX = -1, PositionY = -1, TrackID = -1;
+	private static int PositionX = -1, PositionY = -1, TrackID = -1, Frame = -1;
 	private Plot plot = new Plot("Trajectories", "x (" + IJ.micronSymbol + "m)", "y (" + IJ.micronSymbol + "m)");
 	private int plotNumber = 0;
 	private double[][] MaxMinXY = new double[2][2];
 	private boolean fixedRange = true;
+	private ImagePlus initialMovie = null;
+	private int fileAnalysed = 0;
 
 	public Plot_Trajectories() {
 		super("Imaris or analysed file", JFileChooser.FILES_AND_DIRECTORIES);
@@ -45,6 +55,20 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 		IJ.log("  (\\_/)");
 		IJ.log("  (o.o)");
 		IJ.log("  (___) 0");
+
+		initialMovie = IJ.getImage();
+		if (initialMovie != null) {
+			if (initialMovie.getOverlay() == null) {
+				initialMovie.setOverlay(new Overlay());
+				initialMovie.getOverlay().drawLabels(true);
+				Analyzer.drawLabels(true);
+				initialMovie.getOverlay().drawNames(true);
+				initialMovie.getOverlay().drawBackgrounds(false);
+				initialMovie.getOverlay().setLabelColor(Color.WHITE);
+				initialMovie.getOverlay().setLabelFont(new Font("SansSerif", Font.BOLD, 18), false);
+			} else
+				initialMovie.getOverlay().clear();
+		}
 
 		plot.setLineWidth(2);
 
@@ -61,7 +85,7 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 				} else {
 					IJ.log(pathFile + " does not countain any 0-Trajectories.csv file to analyse. It is thus ignored.");
 				}
-			} else if (pathFile.endsWith(".csv")) {
+			} else if (pathFile.endsWith(".csv") || pathFile.endsWith(".txt")) {
 				ResultsTableMt rtTemp = ResultsTableMt.open2(pathFile);
 				addRtFromAnalysedFileToPlot(rtTemp);
 			} else if (pathFile.endsWith(".xls")) {
@@ -88,37 +112,54 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 				}
 			} else
 				IJ.log(pathFile + " is not a correct file. It is thus ignored.");
+			fileAnalysed++;
 		}
 
-		plot.setSize(512, 512);
-		plot.setFormatFlags(Plot.X_TICKS + Plot.X_MINOR_TICKS + Plot.X_NUMBERS + Plot.Y_TICKS + Plot.Y_MINOR_TICKS
-				+ Plot.Y_NUMBERS);
-		if (fixedRange) {
-			plot.setLimits(-200, 200, -200, 200);
+		if (initialMovie != null) {
+			initialMovie.setHideOverlay(false);
+			initialMovie.show();
 		} else {
-			double margin = 10;
-			plot.setLimits(MaxMinXY[1][0] - margin, MaxMinXY[0][0] + margin, MaxMinXY[1][1] - margin,
-					MaxMinXY[0][1] + margin);
+			plot.setSize(512, 512);
+			plot.setFormatFlags(Plot.X_TICKS + Plot.X_MINOR_TICKS + Plot.X_NUMBERS + Plot.Y_TICKS + Plot.Y_MINOR_TICKS
+					+ Plot.Y_NUMBERS);
+			if (fixedRange) {
+				plot.setLimits(-200, 200, -200, 200);
+			} else {
+				double margin = 10;
+				plot.setLimits(MaxMinXY[1][0] - margin, MaxMinXY[0][0] + margin, MaxMinXY[1][1] - margin,
+						MaxMinXY[0][1] + margin);
+			}
+			plot.show();
 		}
-		plot.show();
-		IJ.log("" + plotNumber + " trajectories plotted.");
+		IJ.log("" + plotNumber + " trajectories plotted and " + fileAnalysed + " files analysed.");
 	}
 
 	private void addRtFromAnalysedFileToPlot(ResultsTableMt rt) {
 		if (rt == null || rt.getCounter() <= 1)
 			return;
 		int CELL_NUMBER = rt.getColumnIndex("Cell number");
+		if (CELL_NUMBER < 0)
+			CELL_NUMBER = rt.getColumnIndex("Group");
+		rt = Utils.sortRt(rt, CELL_NUMBER);
+
 		int cellNumber = (int) rt.getValueAsDouble(CELL_NUMBER, 0);
-		int row = 1;
+		int row = 0;
+		while (row < rt.getCounter() && rt.getValueAsDouble(CELL_NUMBER, row) == cellNumber) {
+			row++;
+		}
+
 		while (row < rt.getCounter()) {
 			ResultsTableMt rtTemp = new ResultsTableMt();
 			while (row < rt.getCounter() && rt.getValueAsDouble(CELL_NUMBER, row) == cellNumber) {
 				rtTemp.incrementCounter();
 				rtTemp.addValue(ResultsTableMt.X, rt.getValueAsDouble(ResultsTableMt.X, row));
 				rtTemp.addValue(ResultsTableMt.Y, rt.getValueAsDouble(ResultsTableMt.Y, row));
+				rtTemp.addValue(ResultsTableMt.FRAME, rt.getValueAsDouble(ResultsTableMt.FRAME, row));
 				row++;
 			}
-			addTrajToPlot(rtTemp.getColumnAsDoubles(ResultsTableMt.X), rtTemp.getColumnAsDoubles(ResultsTableMt.Y));
+			if (rtTemp.getCounter() > 1)
+				addTrajToPlot(rtTemp.getColumnAsDoubles(ResultsTableMt.X), rtTemp.getColumnAsDoubles(ResultsTableMt.Y),
+						rtTemp.getColumnAsDoubles(ResultsTableMt.FRAME));
 
 			if (row < rt.getCounter())
 				cellNumber = (int) rt.getValueAsDouble(CELL_NUMBER, row);
@@ -130,8 +171,19 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 			return;
 		HashMap<Integer, ResultsTableMt> hashMap = new HashMap<Integer, ResultsTableMt>();
 		PositionX = rt.getColumnIndex("Position X");
+		if (PositionX == -1)
+			PositionX = 0;
 		PositionY = rt.getColumnIndex("Position Y");
+		if (PositionY == -1)
+			PositionY = 1;
 		TrackID = rt.getColumnIndex("TrackID");
+		if (TrackID == -1)
+			TrackID = 7;
+		Frame = rt.getColumnIndex("Time");
+		if (Frame == -1)
+			Frame = 6;
+
+		double pixelSize = 0.107; // µm/pix TODO
 		for (int row = 0; row < rt.getCounter(); row++) {
 			ResultsTableMt temp = hashMap.get((int) rt.getValueAsDouble(TrackID, row));
 			if (temp == null) {
@@ -139,8 +191,9 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 				hashMap.put((int) rt.getValueAsDouble(TrackID, row), temp);
 			}
 			temp.incrementCounter();
-			temp.addValue(ResultsTableMt.X, rt.getValueAsDouble(PositionX, row));
-			temp.addValue(ResultsTableMt.Y, rt.getValueAsDouble(PositionY, row));
+			temp.addValue(ResultsTableMt.X, rt.getValueAsDouble(PositionX, row) / pixelSize);
+			temp.addValue(ResultsTableMt.Y, initialMovie.getHeight() - rt.getValueAsDouble(PositionY, row) / pixelSize); // TODO
+			temp.addValue(ResultsTableMt.FRAME, rt.getValueAsDouble(Frame, row));
 		}
 
 		List<Integer> listTrackID = new ArrayList<Integer>(hashMap.keySet());
@@ -149,28 +202,83 @@ public class Plot_Trajectories extends Combine_Excell_Results {
 		while (itTrackID.hasNext()) {
 			int traj = itTrackID.next();
 			ResultsTableMt temp = hashMap.get(traj);
-			addTrajToPlot(temp.getColumnAsDoubles(ResultsTableMt.X), temp.getColumnAsDoubles(ResultsTableMt.Y));
+			addTrajToPlot(temp.getColumnAsDoubles(ResultsTableMt.X), temp.getColumnAsDoubles(ResultsTableMt.Y),
+					temp.getColumnAsDoubles(ResultsTableMt.FRAME));
 		}
 	}
 
-	private void addTrajToPlot(double[] xvalues, double[] yvalues) {
-		plot.setColor(Utils.getGradientColor(Color.RED, Color.BLUE, 10, plotNumber));
-		double[] x = Utils.minus(xvalues, xvalues[0]);
-		double[] y = Utils.minus(yvalues, yvalues[0]);
-		double[] temp = Utils.maxMin(x);
+	private void addTrajToPlot(double[] xvalues, double[] yvalues, double[] framevalues) {
+		if (isOriginalMovieOpened((int) Utils.getMax(framevalues))) {
 
-		if (!fixedRange) {
-			// Update MaxMin for the plot dimensions
-			MaxMinXY[0][0] = Math.max(temp[0], MaxMinXY[0][0]);
-			MaxMinXY[1][0] = Math.min(temp[1], MaxMinXY[1][0]);
-			temp = Utils.maxMin(y);
-			MaxMinXY[0][1] = Math.max(temp[0], MaxMinXY[0][1]);
-			MaxMinXY[1][1] = Math.min(temp[1], MaxMinXY[1][1]);
+			Color[] colors = new Color[] { Color.BLUE, Color.RED, Color.GREEN, Color.CYAN, Color.MAGENTA, Color.ORANGE,
+					Color.PINK };
+
+			Overlay ov = null;
+			ImageCanvas ic = initialMovie.getCanvas();
+			if (ic != null)
+				ov = ic.getShowAllList();
+			if (ov == null)
+				ov = initialMovie.getOverlay();
+			if (ov == null)
+				ov = new Overlay();
+
+			for (int row = 0; row < framevalues.length; row++) {
+				PointRoi ptroi = new PointRoi(xvalues[row], yvalues[row]);
+				ptroi.setPosition((int) framevalues[row]);
+				ptroi.setStrokeColor(colors[fileAnalysed]);
+				ptroi.setStrokeWidth(1.5);
+
+				ov.add(ptroi);
+
+				if (row > 0) {
+
+					PolygonRoi roi = new PolygonRoi(
+							Utils.buildFloatPolygon(Utils.trunc(xvalues, 0, row), Utils.trunc(yvalues, 0, row)),
+							Roi.POLYLINE);
+
+					roi.setStrokeColor(colors[fileAnalysed]);
+					// roi.setName("c" + cell.cellNumber);
+					roi.setStrokeWidth(1.5);
+					roi.setPosition((int) framevalues[row]);
+					ov.add(roi);
+				}
+			}
+
+			initialMovie.draw();
+			initialMovie.setHideOverlay(false);
+
+		} else {
+
+			plot.setColor(Utils.getGradientColor(Color.RED, Color.BLUE, 10, plotNumber));
+			double[] x = Utils.minus(xvalues, xvalues[0]);
+			double[] y = Utils.minus(yvalues, yvalues[0]);
+			double[] temp = Utils.maxMin(x);
+
+			if (!fixedRange) {
+				// Update MaxMin for the plot dimensions
+				MaxMinXY[0][0] = Math.max(temp[0], MaxMinXY[0][0]);
+				MaxMinXY[1][0] = Math.min(temp[1], MaxMinXY[1][0]);
+				temp = Utils.maxMin(y);
+				MaxMinXY[0][1] = Math.max(temp[0], MaxMinXY[0][1]);
+				MaxMinXY[1][1] = Math.min(temp[1], MaxMinXY[1][1]);
+			}
+
+			plot.addPoints(x, y, Plot.LINE);
+			plot.draw();
 		}
 
-		plot.addPoints(x, y, Plot.LINE);
-		plot.draw();
 		plotNumber++;
+	}
+
+	private boolean isOriginalMovieOpened(int maxFrame) {
+		if (initialMovie == null || initialMovie.getImageStackSize() == 0) {
+			initialMovie = null;
+			return false;
+		}
+		if (initialMovie.getImageStackSize() >= maxFrame)
+			return true;
+		initialMovie = null;
+		return false;
 	}
 
 }
