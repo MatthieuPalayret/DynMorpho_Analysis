@@ -11,6 +11,55 @@ import MP.utils.Utils;
 import ij.IJ;
 import ij.gui.Plot;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Align_Trajectories plugin further analyses outputs from Imaris:
+ *         it aligns trajectories of various cells on a single (Ox) axis, and
+ *         the behaviour of the movement of their detected particles, depending
+ *         whether these are at the front (ahead of the center of mass of the
+ *         cell, on the (Ox) axis) or at the back of the cell.
+ * 
+ *         It thus takes two consecutive inputs: (1) an ".xls" Imaris-derived
+ *         file with the CELL tracks, and (2) an ".xls" Imaris-derived file for
+ *         the ACTIN tracks.
+ * 
+ *         It then globally re-align each cell (and their corresponding particle
+ *         tracks) along a common (Ox) axis (defined by the first and last
+ *         position of the cell track - as we here suppose the cell trajectory
+ *         to be roughly linear). The tracks of all the cells (and of their
+ *         particles - with a twice thinner line) are plotted together in two
+ *         different plots: (1) In a first plot (which is not automatically
+ *         saved), the colour of the trajectories of the particles gets darker
+ *         with time (to indicate their direction over time). (2) In the second
+ *         plot (saved in "Trajectory_plot.tiff"), trajectories are plotted
+ *         following a colour-coded time-gradient depending on whether they are
+ *         behind the center of mass of the cell (gradient from yellow to green)
+ *         or before it (gradient from orange to red).
+ * 
+ *         Finally, trajectories are analysed in a similar way as in the
+ *         Get_Trajectories plugin: for each trajectory of each cell, the plugin
+ *         calculates and saves : (1st column) the name of the cell this
+ *         trajectory belongs to, (2nd) the name of the trajectory, (3rd) its
+ *         average speed, (4th) its average speed along the (0x) axis, (5th) its
+ *         global speed (distance between last and first position / number of
+ *         frames), (6th) its directionality (1 if the trajectory is linear;
+ *         close to 0 if it moves around a fixed position), (7th) its full
+ *         length (along its path), (8th) its global length (distance between
+ *         last and first positions), (9th) its total duration ("Time length"),
+ *         (10th) whether, when the particle if first detected, it appears
+ *         before the centre of mass of the cell (on the (Ox) axis) ("rear"
+ *         particle) or after it ("upfront" particle). This data is saved in
+ *         "Track_Analysis.csv".
+ * 
+ *         Then, a sum-up of these results is calculated and saved separately
+ *         for all "rear" particles (saved in "Track_rear_statistics.csv") and
+ *         for all "upfront" particles (saved in
+ *         "Track_upfront_statistics.csv"). For each of the 3rd to 9th column,
+ *         both an average value and a standard deviation of all the particles
+ *         of interest are calculated and saved.
+ */
 public class Align_Trajectories extends Analyse_Trajectories {
 
 	final int CELL = 0, TRAJ = 1;

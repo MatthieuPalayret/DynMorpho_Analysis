@@ -26,6 +26,88 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.FloatPolygon;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Get_Trajectories detects and analyses moving particles from a
+ *         ".tif" movie. The ".tif" movie to analyse needs to be open when the
+ *         plugin is started. One is then asked to provide a folder for saving
+ *         the outputs.
+ * 
+ *         The movie first goes through 3 consecutive filters: (1) Fast
+ *         Fourier-Transform bandpass filter to remove all features < 1 pix and
+ *         > 10 pix in spatial frequency ; (2) a temporal walking average filter
+ *         over 3 frames to smooth the movement of the particles and to avoid
+ *         intermittent trajectories ; (3) a contrast adjustment (saturation of
+ *         0.35).
+ * 
+ *         Then the movie is analysed through the Peakfit (gdcs_smlm) routine
+ *         which detects and fit all possible particles. It outputs these first
+ *         results in "TableFit_PeakFit.txt".
+ * 
+ *         Results are then interactively filtered (using their width and
+ *         intensity as parameters), and temporal linked to build trajectories
+ *         (with the maximal distance between two consecutive fits and the
+ *         maximal number of frames when the tracked particle is allowed not to
+ *         be detected as parameters). Filtered results and trajectories are
+ *         plotted in real time. The chosen parameters are saved in
+ *         "parameters_AlignTrajectories.txt", the filtered fits in
+ *         "TableFit_Sorted.txt", and the sorted trajectories in
+ *         "Table_Trajectories.txt".
+ *
+ *         Then, follow a few different analyses :
+ * 
+ *         (1a) An estimation of the "average trajectory of the cell" (ATC) is
+ *         obtained by calculating the average displacement of particles which
+ *         are tracked in consecutive frames. This ATC is saved in
+ *         "AvgTrajectory.txt" and plotted in black in the "AvgTrajectory.tiff"
+ *         movie. In the same movie, each trajectory is also plotted starting
+ *         from the ATC in the frame it first appears. Each trajectory is
+ *         colour-coded depending on its relative proximity compared to the ATC
+ *         (green if following it, red if going in the opposite direction).
+ * 
+ *         (1b) For each trajectory, its angle between its average direction and
+ *         the average direction of the ATC during the same frames is
+ *         calculated, and plotted as a radius on a disk (0° = the trajectory is
+ *         heading in the same direction of the cell ; 180° = the trajectory is
+ *         going in the opposite direction from where the cell is heading). The
+ *         colour of the radius depends on the local radial density (red for
+ *         high density of radii within +/- 5° ; green for low density). The
+ *         plot is saved in "AvgAngles.tiff".
+ * 
+ *         (2) For each trajectory, the plugin then calculates (a) its average
+ *         speed, (b) its global speed (distance between last and first position
+ *         / number of frames) (c) its directionality (1 if the trajectory is
+ *         linear ; close to 0 if it moves around a fixed position), (d) its
+ *         full length (along its path), (e) its global length (distance between
+ *         last and first position), (f) its total duration ("Time length"), (g)
+ *         its average intensity (in arbitrary units), (h) its average width
+ *         (stdev of the fitted 2D-Gaussians), (i) its average area (area of the
+ *         2D fitted Gaussians) (j) the standard deviation of its distance to
+ *         the "average cell trajectory" (ATC), and (k) its average angle with
+ *         the "average cell trajectory" (ATC) (in rad.). This data is saved in
+ *         "Track_Analysis.csv". *
+ * 
+ *         (3) A pairwise distance analysis : for each couple of trajectories
+ *         sharing two consecutive frames, the plugin plots their average
+ *         relative speed against their (initial) distance. (i) Centripetal
+ *         attraction should result in negative speeds; (ii) Centrifugal
+ *         repulsion should result in positive speeds; (iii) Randomness should
+ *         result in speeds close to 0. The reasoning behind this analysis is to
+ *         try to detect two populations of particles which would behave
+ *         differently: at the front of the cell, a flow moving upfront in the
+ *         direction of the cell ; at the rear of the cell, a retroactive flow
+ *         moving towards the center of the cell. The plot is saved in
+ *         "Pairwise_Analysis.tiff" and its data in "Pairwise_Analysis.csv".
+ * 
+ *         (4) Finally, the data is analysed through the Analyse_Trajectories
+ *         plugin, in order to perform both an MSD (Mean-Square Displacement)
+ *         and a JD (Jump-Distance) diffusion analyses. See this plugin for
+ *         further explanations. NB : it is then wrongly assumed that 1 frame =
+ *         0.1 s and 1 pix = 0.1 µm. The final results from this last step
+ *         requires to retro-convert the units.
+ */
 public class Get_Trajectories extends Align_Trajectories {
 
 	ImagePlus imp;

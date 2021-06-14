@@ -27,7 +27,22 @@ import org.apache.poi.ss.usermodel.WorkbookFactory;
 import MP.objects.ResultsTableMt;
 import ij.IJ;
 
-public class Combine_Excell_Results extends Combine_Protrusion_Results {
+/**
+ * The Combine_Excel_Results plugin allow to concatenate results of various
+ * Imaris analysis Excel files.
+ * 
+ * The plugin outputs *in the folder of the first analysed file* a
+ * "CombinedResults.xls" Excel file containing the concatenated results (sheet
+ * by sheet).
+ *
+ * The plugin consistently adds an "Origin" column in all Excel sheet to
+ * identify the file name from which the result comes from.
+ * 
+ * Moreover, if an Excel sheet called "Track Speed Mean" exists, the plugin adds
+ * to it a column "AColumnx60" which multiplies the first column by 60.
+ */
+public class Combine_Excel_Results extends Combine_Protrusion_Results {
+
 	public class Plots_Results {
 
 		public Plots_Results() {
@@ -36,17 +51,14 @@ public class Combine_Excell_Results extends Combine_Protrusion_Results {
 
 	}
 
-	public Combine_Excell_Results() {
+	public Combine_Excel_Results() {
 		super("Imaris file", JFileChooser.FILES_ONLY);
 	}
 
-	public Combine_Excell_Results(String title, int fileChooserType) {
+	public Combine_Excel_Results(String title, int fileChooserType) {
 		super(title, fileChooserType);
 	}
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -3621134683008902745L;
 	private static final String TRAJ_SPEED_MEAN = "Track Speed Mean";
 

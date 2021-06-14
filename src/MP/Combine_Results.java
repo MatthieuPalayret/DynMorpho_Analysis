@@ -9,11 +9,27 @@ import MP.objects.ResultsTableMt;
 import MP.params.Params;
 import ij.IJ;
 
-public class Combine_Results extends Combine_Excell_Results {
+/**
+ * The Combine_Results plugin allow to separately concatenate results of (1)
+ * various Imaris analysis Excel files (using the Combine_Excell_Results plugin)
+ * and (2) various results ".csv" files from MP plugins, in a single go.
+ * 
+ * The plugin can be fed with folders (and not only files). It will then scan
+ * the folders for all ".csv" and ".xls" files, and consider them for
+ * concatenation.
+ * 
+ * The plugin outputs *in the folder of the first analysed file (or folder)* a
+ * "CombinedResults.xls" Excel file and/or a "CombinedResults.csv" file (as
+ * relevant) separately containing the concatenated results.
+ *
+ * The plugin consistently adds an "Origin" column in all Excel sheet to
+ * identify the file name from which the result comes from.
+ * 
+ * Moreover, if an Excel sheet called "Track Speed Mean" exists, the plugin adds
+ * to it a column "AColumnx60" which multiplies the first column by 60.
+ */
+public class Combine_Results extends Combine_Excel_Results {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -6687219155912852110L;
 	private ResultsTableMt rtCSV = new ResultsTableMt();
 

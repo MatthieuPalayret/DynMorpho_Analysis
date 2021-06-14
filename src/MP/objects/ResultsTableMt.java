@@ -42,7 +42,7 @@ public class ResultsTableMt extends ResultsTable {
 		return column_;
 	}
 
-	/** Adds a value to the end of the given column. Counter must be >0. */
+	/** Adds a value to the end of the given column. Counter must be ">0". */
 	@Override
 	public void addValue(int column, double value) {
 		setValue(column, getCounter() - 1, value);

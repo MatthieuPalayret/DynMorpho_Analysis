@@ -14,7 +14,7 @@ import org.apache.poi.EncryptedDocumentException;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 
-import MP.Combine_Excell_Results.ExcelHolder;
+import MP.Combine_Excel_Results.ExcelHolder;
 import MP.objects.Histogram;
 import MP.objects.ResultsTableMt;
 import MP.utils.Parallel;
@@ -25,6 +25,61 @@ import ij.IJ;
 import ij.gui.Plot;
 import ij.plugin.PlugIn;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Analyse_Trajectories takes a ".xls" Imaris file of trajectories
+ *         of particles and analyse their speed and behaviours.
+ * 
+ *         It performs three analyses of the trajectories :
+ * 
+ *         (1) It calculates and plot their step distribution histogram and fit
+ *         it to a log-normal distribution (which is the theoretical curve
+ *         followed by freely moving particles), which plot is output as
+ *         "4-StepSizeHistogram.tif" in the folder of the ".xls" input file.
+ * 
+ *         (2) An MSD (Mean-Square Displacement) analysis to get an estimation
+ *         of the speed of each trajectory and to measure whether it is freely
+ *         diffusing or following a directed movement. Only trajectories of
+ *         length > 2 are considered. A polynomial of degree 2 is fitted to the
+ *         MSD curve using up to the 15 first distance intervals.
+ * 
+ *         Different motion theoretically follow three main different MSD
+ *         curves:
+ * 
+ *         - Directed movement: MSD = 4D * DeltaT + (V * DeltaT)^2
+ * 
+ *         - Constrained movement : MSD = 4D * DeltaT^alpha (alpha < 1)
+ * 
+ *         - Freely diffusive movement: MSD = 4D * DeltaT
+ * 
+ *         The following outputs are saved in the folder of the ".xls" input
+ *         file :
+ * 
+ *         - The MSD plot and the fitted polynomial:
+ *         "5-RebuildTrajectories_MSD.tif"
+ * 
+ *         - The histogram distribution of the diffusion coefficient D (in
+ *         µm^2/s) obtained (by correct fitting - for which the diffusion
+ *         coefficient is >0 and the R^2 value > 0.6) for all the trajectories:
+ *         "6-MSD_Diffusion_Histogram.tif" (and its corresponding "-Data.txt"
+ *         and "-Hist.txt" files).
+ * 
+ *         - The histogram distribution of the average speed coefficient V (in
+ *         the case of a directed movement - in µm/s) obtained (in the same
+ *         conditions) for all the trajectories: "6-MSD_Speed_Histogram.tif"
+ *         (and its corresponding "-Data.txt" and "-Hist.txt" files).
+ * 
+ *         (3) A Jump-Distance analysis (equivalent to the MSD analysis, but on
+ *         the whole population of trajectories, not for each single trajectory)
+ *         for up to the 11 first step intervals. Three hypotheses are tested by
+ *         fitting the results with a corresponding theoretical distribution:
+ *         the trajectories are composed of 1, 2 or 3 populations of diffusing
+ *         particles. Results are saved in a subfolder "/PopulationSD". Please
+ *         ask matthieu.palayret@m4x.org if you need more information about
+ *         these results.
+ */
 public class Analyse_Trajectories implements PlugIn {
 
 	protected static final String sheetName = "Position", sheetNameTime = "Time";
@@ -73,7 +128,7 @@ public class Analyse_Trajectories implements PlugIn {
 		directory = new File(path[0] + File.separator + path[1].substring(0, path[1].indexOf(".xls")));
 		directory.mkdir();
 
-		Combine_Excell_Results cir = new Combine_Excell_Results();
+		Combine_Excel_Results cir = new Combine_Excel_Results();
 
 		try {
 			ExcelHolder holder = new ExcelHolder(path[0] + File.separator + path[1]);
@@ -284,7 +339,6 @@ public class Analyse_Trajectories implements PlugIn {
 	 * @param nMSD       - Maximum time interval (in frames) for MSD analysis.
 	 * @param trajLength - Only consider trajectories > trajLength.
 	 */
-	@SuppressWarnings("deprecation")
 	public void msd_Analysis(boolean showGroup, int nMSD, int trajLength) {
 		int polynomial = 2;
 		ResultsTableMt recap = new ResultsTableMt();

@@ -12,6 +12,33 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.process.FloatPolygon;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Analyse_Contour plugin is a shorter version of the
+ *         Analyse-Protrusion plugin: it only analyses the contour of the cells
+ *         of the movie that it is fed with (but not their protrusions).
+ *
+ *         It takes as input a movie (if none is open when the plugin is
+ *         started, the user is asked to open one). NB: the plugin can also
+ *         manage the analysis of a single frame (i.e. not a movie).
+ * 
+ *         An interactive window allows to choose correct parameters to
+ *         determine the contours of the cells. In blue are plotted detected and
+ *         selected cell contours ; in dark blue, those which are discarded
+ *         (because of a too big area). Then cell which contours are overlapping
+ *         in two consecutive frames are linked in trajectories.
+ * 
+ *         The final movie is saved in "0-Contours.gif" as a GIF movie (only)
+ *         (with a rate of 3 frames/s.). Final chosen parameters are saved in
+ *         "Parameters.csv" ; and all detected contours (or cells) are saved in
+ *         "1-Contour-analysis.csv": (1st column) the frame number ; (2nd-3rd)
+ *         the (x, y) position of the center of mass of this cell in that frame
+ *         ; (4th) the cell number (the same number than in the GIF movie) ;
+ *         (5th) the area of this cell in that frame ; (6th) the perimeter of
+ *         this cell in that frame.
+ */
 public class Analyse_Contour extends Analyse_Protrusion {
 
 	public Analyse_Contour() {

@@ -15,6 +15,31 @@ import ij.ImagePlus;
 import ij.plugin.Duplicator;
 import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Two_Colour_Analysis plugin is a version of the Analyse_Protrusion
+ *         plugin adapted for a two-channel movie with two populations of cells
+ *         to compare: some cells only emit in one channel (they are called the
+ *         "green-only" or "green" cells) and others emit in both channels (they
+ *         are called the "red-and-green" or "red" cells).
+ * 
+ *         Basically, both channels are first analysed independently to detect
+ *         cells and their contours (in an interactive way). At the same time,
+ *         the plugin matches cells that emit in both channels, to detect the
+ *         two populations of cells (the "green-only" and the "red-and-green"
+ *         cells).
+ * 
+ *         The cell trajectory analyses and the protrusion analyses are then
+ *         performed, as in the Analyse_Protrusion plugin, and the outputs are
+ *         given: (1) without distinction between the two population of cells ;
+ *         (2) for the "green-only" cells only (with the "_green.csv" suffix) ;
+ *         and (3) for the "red-and-green" cells only (with the "_red.csv"
+ *         suffix).
+ * 
+ *
+ */
 public class Two_Colour_Analysis extends Analyse_Protrusion {
 
 	public Two_Colour_Analysis() {

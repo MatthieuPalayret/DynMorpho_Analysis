@@ -29,7 +29,7 @@ public class FittingPeakFit {
 	boolean fitted = false;
 	String fileDirName;
 
-	FitEngineConfiguration config = null;
+	gdsc.smlm.engine.FitEngineConfiguration config = null;
 	MemoryPeakResults results = new MemoryPeakResults();
 
 	public static final int pixelSize = 100;

@@ -8,6 +8,22 @@ import MP.params.Params;
 import MP.utils.Utils;
 import ij.IJ;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Complete_Trajectories plugin should not be used anymore. It
+ *         extract trajectories from a pre-processed result file from the
+ *         Get_Trajectories plugin (a "Table_Trajectories.txt" file), and
+ *         re-analyse them.
+ * 
+ *         It process the same analyses (1a), (1b), (2) and (3) (but not (4)) as
+ *         the Get_Trajectories plugin (see the corresponding explanation).
+ * 
+ *         It may be used to re-analyse some fitted data whose analyses were
+ *         lost or perverted, without redoing the relatively long process of
+ *         fitting and tracking the particles.
+ */
 public class Complete_Trajectories extends Get_Trajectories {
 
 	public Complete_Trajectories() {

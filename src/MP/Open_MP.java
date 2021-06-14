@@ -13,6 +13,16 @@ import ij.plugin.PlugIn;
 import ij.plugin.filter.Analyzer;
 import ij.plugin.frame.RoiManager;
 
+/**
+ * This plugin asks for a ".tif" file that has been previously analysed with the
+ * Two_Colour_Analysis plugin. It opens the ".tif" file and re-draws on it all
+ * the detected and analysed contours.
+ * 
+ * It does not save any new file.
+ * 
+ * It requires a "stack-RoiSet.zip" to be present in the same folder as the
+ * ".tif" file.
+ */
 public class Open_MP implements PlugIn {
 
 	String path;

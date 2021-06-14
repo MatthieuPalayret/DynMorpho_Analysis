@@ -30,11 +30,20 @@ import MP.objects.ResultsTableMt;
 import ij.IJ;
 import ij.plugin.PlugIn;
 
+/**
+ * The Combine_Protrusion_Results plugin allow to concatenate results of various
+ * Analyse_Protrusion and/or Two_Colour_Analysis analysis folders. It asks for
+ * folders within which are saved either "2-Results.csv", "2-Results_green.csv",
+ * and/or "2-Results_red.csv" files. Folders with no such files are ignored.
+ * 
+ * For each analysis (or folder), one can decide to combine only the "green"
+ * results, or the "red" ones or all of them.
+ * 
+ * The plugin outputs *in the first analysed folder* a "2-Combined_Results.csv"
+ * file containing the concatenated results.
+ */
 public class Combine_Protrusion_Results extends JFrame implements PlugIn, ActionListener, ListSelectionListener {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 8288301039264353779L;
 	private JLabel lblFoldersToBe;
 	private JButton btnAddFolders;

@@ -6,12 +6,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Random;
 
 import MP.objects.ResultsTableMt;
 import MP.params.Params;
-
-import java.util.Random;
-
 import flanagan.analysis.Regression;
 import flanagan.analysis.RegressionFunction;
 import ij.ImagePlus;

@@ -29,11 +29,34 @@ import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.plugin.filter.Analyzer;
 
-public class Plot_Trajectories extends Combine_Excell_Results {
+/**
+ * This plugin plot the trajectories (of cells or dots within the cells) from
+ * pre-processed data.
+ * 
+ * It accepts both (1) Imaris-analysed data in a ".xls" format with a sheet
+ * called "Position" (with a 1st column called "Position X", a 2nd column
+ * "Position Y", a 7th column "Time" and an 8th column "TrackID"), and (2) data
+ * analysed with one of the MP plugins (e.g. Get_Trajectories, or
+ * Analyse_Protrusion) (".csv" or ".txt" files).
+ * 
+ * Several datasets (from potentially both different types of analyses) may be
+ * plotted in the same round.
+ * 
+ * If a folder (and not a file) is fed in the dialogue box, the plugin will
+ * search for a file called "0-Trajectories.csv" in the folder (or it will
+ * ignore this folder).
+ * 
+ * If no movie is open when the plugin is started, all the trajectories are
+ * plotted in a new white window.
+ * 
+ * If the original ".tif" file - which was used to detect the detected
+ * trajectories which data is fed to the plugin - is open before starting the
+ * plugin, the trajectories are plotted over this open movie (the trajectories
+ * from the first dataset are coloured blue, then those of the following dataset
+ * red, then green, cyan, magenta, orange, and pink).
+ */
+public class Plot_Trajectories extends Combine_Excel_Results {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -6687219155912852110L;
 	private static final String SHEET_NAME = "Position";
 	private static int PositionX = -1, PositionY = -1, TrackID = -1, Frame = -1;

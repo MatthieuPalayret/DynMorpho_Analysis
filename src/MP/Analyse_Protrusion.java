@@ -32,6 +32,98 @@ import net.calm.iaclasslibrary.TimeAndDate.TimeAndDate;
 import net.calm.iaclasslibrary.UtilClasses.GenUtils;
 import net.calm.iaclasslibrary.UtilClasses.Utilities;
 
+/**
+ * 
+ * @author matth
+ *
+ *         The Analyse_Protrusion plugin, based on the net.calm.adapt.Adapt by
+ *         David Barry, analyses the protrusions of multiple cells in a ".tif"
+ *         movie. It takes as input a movie (if none is open when the plugin is
+ *         started, the user is asked to open one). NB: the plugin can also
+ *         manage the analysis of a single frame (i.e. not a movie).
+ * 
+ *         First, an interactive window allows to choose correct parameters to
+ *         determine the contours of the cells. In blue are plotted detected and
+ *         selected cell contours ; in dark blue, those which are discarded
+ *         (because of a too big area). Then cell which contours are overlapping
+ *         in two consecutive frames are linked in trajectories.
+ * 
+ *         Then, a second interactive window offers to perform two different
+ *         actions:
+ * 
+ *         (1) Choose a set of parameters to correctly detect the protrusions of
+ *         the cells: (a) the minimal change of curvature in the contour of the
+ *         cell for a protrusion to be detected (in °) ; (b) the maximal surface
+ *         ratio between the protrusion and the corresponding cell (in % - the
+ *         protrusion is supposed to be only a small portion of the cell) ; (c)
+ *         a smoothing factor (to take into account only average changes of
+ *         curvature in the contour of the cell, and not tiny accidental ones) ;
+ *         (d) whether to try to detect the uropod of the cell (corresponding to
+ *         the protrusion of the cell in the opposite direction from the
+ *         direction the cell is moving towards, if at least one protrusion is
+ *         detected).
+ *
+ *         (2a) Choose some parameters to refine the selection of the cell
+ *         trajectories: (a) the minimal length of a trajectory (in s. - if
+ *         trajectories are shorter, they are discarded) ; (b) the dramatic cell
+ *         area in-/de-crease factor (in % - if a massive increase or decrease
+ *         is observed in the surface of a cell during its trajectory, it is
+ *         probably meeting or separating from another cell ; the plugin thus
+ *         split the trajectory in two around that massive change).
+ * 
+ *         (2b) Interactively rejecting some cells or trajectories by selecting
+ *         the correct button ("No rejection" ; "Reject cell in a single
+ *         frame?"; "Reject a whole cell trajectory?") and directly clicking on
+ *         the corresponding cell / trajectory on the movie. All initially
+ *         detected trajectories are plotted, with colours depending on their
+ *         status: Dark red: cell rejected in a single frame because of area
+ *         in-/de-crease; Dark blue: cell rejected in a single frame; Dark
+ *         green: trajectory length shorter than the defined parameter; Dark
+ *         purple: whole cell rejected; [not used except for unknown reason]
+ *         Dark yellow: cell rejected in a single frame because of 'technical'
+ *         issue. NB: No uropod is detected in the 1st frame of a trajectory.
+ * 
+ *         Finally, the final movie is saved in "stack-ini.tif" and
+ *         "stack-RoiSet.zip" (in order to be easy re-open thanks to the Open_MP
+ *         plugin), and as a GIF movie in "stack.gif" (with a rate of 3
+ *         frames/s.). Final chosen parameters are saved in "Parameters.csv" ; a
+ *         list of the trajectories of all the cells in "0-Trajectories.csv"
+ *         (with for each cell and each frame, the frame number, the cell
+ *         number, the status of the trajectory -rejected or not-, and the (x,
+ *         y) position of the center of mass of this cell in that frame) ; the
+ *         contours of all protrusions of all cells in
+ *         "1-Protrusion_contours.csv" ; the trajectory of all detected
+ *         protrusions (in terms of their centres of mass) in
+ *         "1-Protrusion_center_of_mass_positions.csv".
+ * 
+ *         Results from additional analyses are saved:
+ * 
+ *         - In "2-Results_per_frame.csv", for each cell and frame (cf. 1st and
+ *         3rd columns), it outputs: (4th column) the average distance of the
+ *         protrusions (but not the uropod, if it is detected) to the leading
+ *         edge of the cell (defined as the opposite of the uropod) and (5th)
+ *         the distance of the closest protrusion to the uropod (both distances
+ *         are divided by the perimeter of the cell and given as %) ; (6th) a
+ *         measure of the circularity of the cell (the ratio of the real area of
+ *         the cell over the area of a circular cell which would have the same
+ *         perimeter as the cell) ; (7th) the number of protrusions (but not the
+ *         uropod, if it is detected) in the cell in the considered frame ;
+ *         (8th) the average size of the protrusions (but not the uropod, if it
+ *         is detected) in the cell in the considered frame ; (9th) the area of
+ *         the uropod of this cell in that frame, if it is detected ; (10th) the
+ *         area of that cell in that frame.
+ * 
+ *         - In "2-Results.csv", for each cell trajectory (cf. 1st column), it
+ *         outputs: (3rd column) the linearity of the trajectory (the trajectory
+ *         is perfectly linear for a result of 100%) ; (4th) the real distance
+ *         the cell travelled ; (5th) the corresponding average speed of the
+ *         cell (averaged over the number of frames) ; (6th) the global distance
+ *         the cell travelled (distance between its last and first positions) ;
+ *         (7th) the corresponding global average speed of the cell ; (8th-14th)
+ *         the average (4th-10th) values of "2-Results_per_frame.csv" averaged
+ *         over the whole cell trajectory ; (15th) the temporal duration of the
+ *         trajectory.
+ */
 public class Analyse_Protrusion extends AnalyseMovieMP {
 
 	private boolean selectiveOutput = false;
