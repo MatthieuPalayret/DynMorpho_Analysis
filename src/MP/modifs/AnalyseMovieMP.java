@@ -103,7 +103,7 @@ public class AnalyseMovieMP extends NotificationThread implements PlugIn {
 
 	protected static File directory = IJ.getInstance() == null
 			? new File("D:\\debugging\\ADAPT Test Data\\ADAPT Test Data\\Adapt_Test_Data")
-			: new File(IJ.getDirectory("current")); // root directory
+			: new File(IJ.getDirectory("home")); // root directory
 	protected File childDir;
 	public File parDir;
 	protected File velDir;

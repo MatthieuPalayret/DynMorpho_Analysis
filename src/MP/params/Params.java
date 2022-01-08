@@ -9,7 +9,7 @@ import net.calm.iaclasslibrary.UserVariables.UserVariables;
 
 public class Params implements Cloneable {
 
-	public static final double version = 1.540;
+	public static final double version = 1.542;
 	public static final boolean officialVersion = true;
 
 	// For getNewParameters1()
@@ -20,14 +20,14 @@ public class Params implements Cloneable {
 	public int greyThreshold = 90;
 	public int greyThreshold2 = 90;
 	public double smoothingContour = 1; // Gaussian radius to smooth the image before detecting the contour
-	public double minCellSurface = 505; // in pixel² (~25 µm²)
-	public double maxCellSurface = 10000; // in pixel²
+	public double minCellSurface = 505; // in pixelÂ² (~25 ÂµmÂ²)
+	public double maxCellSurface = 10000; // in pixelï¿½
 
 	// For ParamVisualisation
 	public double curvatureMinLevel = -0; // trinary = [smoothedCurvatures - average(smoothedCurvatures)] > level
 	public int minTrajLength = 6; // in frames
 	public double dramaticAreaIncrease = 150; // ratio max of the areas of a cell in two adjacent frames
-	public double minAreaDetection = 30; // in pixel²
+	public double minAreaDetection = 30; // in pixelÂ²
 	public double maxProtrusionToCellAreaRatio = 0.3;
 	public int smoothingCoeffInPixels = 6;
 	public boolean detectUropod = true;
@@ -138,13 +138,13 @@ public class Params implements Cloneable {
 		if (twoColourAnalysis)
 			params.addValue("Contour intensity threshold2", greyThreshold2);
 		params.addValue("Smoothing coefficient for the contour", smoothingContour);
-		params.addValue("Minimal area of a cell (µm²)", minCellSurface * pixelSizeMm2);
-		params.addValue("Maximal area of a cell (µm²)", maxCellSurface * pixelSizeMm2);
+		params.addValue("Minimal area of a cell (ï¿½mï¿½)", minCellSurface * pixelSizeMm2);
+		params.addValue("Maximal area of a cell (ï¿½mï¿½)", maxCellSurface * pixelSizeMm2);
 
-		params.addValue("Minimal curvature for protrusions (°)", -curvatureMinLevel);
+		params.addValue("Minimal curvature for protrusions (ï¿½)", -curvatureMinLevel);
 		params.addValue("Minimal length of a trajectory (s)", minTrajLength * frameLengthS);
 		params.addValue("Dramatic cell area in-/de-crease (%)", dramaticAreaIncrease);
-		params.addValue("Minimal area of a protrusion (µm²)", minAreaDetection * pixelSizeMm2);
+		params.addValue("Minimal area of a protrusion (ï¿½mï¿½)", minAreaDetection * pixelSizeMm2);
 		params.addValue("Maximal protrusion to cell surface ratio", maxProtrusionToCellAreaRatio);
 		params.addValue("Smoothing window (pix)", smoothingCoeffInPixels);
 		params.addValue("Detect uropod?", detectUropod ? 1 : 0);
